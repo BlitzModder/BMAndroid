@@ -1,4 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BlitzModder</string>
+    <string name="action_settings">設定</string>
+    <string name="action_apply">適用</string>
+    <string name="not_installed">未インストール</string>
+    <string name="installed">インストール済</string>
+    <string name="pref_description_send_email">問題を見つけた場合や、新機能の提案をする場合は、気軽にメールを送ってください。</string>
+    <string name="pref_description_twitter">Twitterで開発者をフォローしてメッセージを送ることができます。</string>
+    <string name="pref_description_website">BlitzModderで何か困ったことがありましたら、BlitzModderの使い方を参照してください。</string>
+    <string name="pref_header_contact">お問い合わせ</string>
+    <string name="pref_header_general">一般</string>
+    <string name="pref_title_disk">Blitzの保存ディスク</string>
+    <string name="pref_title_send_email">開発者にメールを送る</string>
+    <string name="pref_title_twitter">Twitterで開発者をフォロー</string>
+    <string name="pref_title_website">BlitzModderのホームページ</string>
+    <string name="title_activity_confirm">確認</string>
+    <string name="title_activity_settings">設定</string>
+    <string name="remove">[削除]</string>
+    <string name="install">[インストール]</string>
+    <string name="confirm_title">確認</string>
+    <string name="confirm_message">これらの変更を適用してもよろしいですか？</string>
+    <string-array name="pref_list_title_disk">
+        <item>内部ストレージ</item>
+        <item>外部SDカード</item>
+    </string-array>
+    <string name="title_activity_sub">SubActivity</string>
+    <string name="no_changes_title">注意</string>
+    <string name="no_changes_message">変更はありません。</string>
 </resources>

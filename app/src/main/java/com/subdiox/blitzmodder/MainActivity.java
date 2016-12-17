@@ -2,8 +2,9 @@ package com.subdiox.blitzmodder;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.content.*;
 
 import com.longevitysoft.android.xml.plist.PListXMLHandler;
 import com.longevitysoft.android.xml.plist.PListXMLParser;
@@ -38,12 +40,20 @@ import io.github.luizgrp.sectionedrecyclerviewadapter.*;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static String[] repoArray = {"BlitzModder"};
+    public static BMApplication app;
+    public static UserSettings userSettings;
+    public static SectionedRecyclerViewAdapter sectionAdapter;
+    public static ArrayList<String> repoArray;
+    public static int currentRepo;
+    public static ArrayList<String> buttonArray;
+    public static ArrayList<String> installedArray;
+    public static String blitzPath;
     public static ArrayList<String> modCategoryArray;
     public static ArrayList<ArrayList<String>> modNameArray;
     public static ArrayList<ArrayList<ArrayList<String>>> modDetailArray;
     public static String locale;
     public static boolean downloadFinished;
+    public static AlertDialog.Builder alertDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,25 +61,120 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.pref_general, false);
 
         // get locale
         locale = Locale.getDefault().getLanguage();
+        if (!(locale.equals("en")) && !(locale.equals("ja"))) {
+            locale = "en";
+        }
+
+        // get application variables
+        app = (BMApplication)this.getApplication();
+        app.init();
+
+        getUserSettings();
 
         // initialize sectionedRecyclerViewAdapter
-        SectionedRecyclerViewAdapter sectionAdapter = new SectionedRecyclerViewAdapter();
+        sectionAdapter = new SectionedRecyclerViewAdapter();
 
         // load mods list
         refreshModsList();
 
+        app.modCategoryArray = modCategoryArray;
+        app.modNameArray = modNameArray;
+        app.modDetailArray = modDetailArray;
+
         // initialize sections
         for (int i = 0; i < modCategoryArray.size(); i++) {
-            sectionAdapter.addSection(new ModSection(modCategoryArray.get(i), modNameArray.get(i)));
+            sectionAdapter.addSection(new ModSection(i));
         }
 
         // initialize recyclerView
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         recyclerView.setAdapter(sectionAdapter);
+
+        // initialize apply button
+        findViewById(R.id.applyButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                prepareAlertDialog();
+                alertDialog.create().show();
+            }
+        });
+    }
+
+    public void getUserSettings() {
+        // get preference variables
+        userSettings = UserSettings.getInstance(getApplicationContext());
+        repoArray = userSettings.repoArray;
+        currentRepo = userSettings.currentRepo;
+        buttonArray = userSettings.buttonArray;
+        installedArray = userSettings.installedArray;
+        blitzPath = userSettings.blitzPath;
+    }
+
+    public void prepareAlertDialog() {
+        // initialize alert dialog
+        getUserSettings();
+        alertDialog = new AlertDialog.Builder(this);
+        String message = getResources().getString(R.string.confirm_message) + "\n\n";
+        boolean installWritten = false;
+        boolean removeWritten = false;
+        boolean applyNeeded = false;
+        for (int i = 0; i < modCategoryArray.size(); i++) {
+            for (int j = 0; j < modNameArray.get(i).size(); j++) {
+                for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
+                    if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
+                        applyNeeded = true;
+                        if (!installWritten) {
+                            message += getResources().getString(R.string.install);
+                            installWritten = true;
+                        }
+                        message += "\n";
+                        message += " - " + getName(modDetailArray.get(i).get(j).get(k));
+                    } else if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
+                        applyNeeded = true;
+                        if (!removeWritten) {
+                            if (installWritten) {
+                                message += "\n";
+                            }
+                            message += getResources().getString(R.string.remove);
+                            removeWritten = true;
+                        }
+                        message += "\n";
+                        message += " - " + getName(modDetailArray.get(i).get(j).get(k));
+                    }
+                }
+            }
+        }
+        if (applyNeeded) {
+            alertDialog.setTitle(getResources().getString(R.string.confirm_title));
+            alertDialog.setMessage(message);
+            alertDialog.setPositiveButton(
+                    "OK",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // OK ボタンクリック処理
+                        }
+                    });
+            alertDialog.setNegativeButton(
+                    "Cancel",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    });
+        } else {
+            alertDialog.setTitle(getResources().getString(R.string.no_changes_title));
+            alertDialog.setMessage(getResources().getString(R.string.no_changes_message));
+            alertDialog.setPositiveButton(
+                    "OK",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    });
+        }
     }
 
     @Override
@@ -88,10 +193,19 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+            // initialize intent
+            Intent intent = new Intent();
+            intent.setClassName("com.subdiox.blitzmodder", "com.subdiox.blitzmodder.SettingsActivity");
+
+            // start intent
+            startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private static void checkBlitzExists() {
+
     }
 
     // download from url and save as a file
@@ -133,6 +247,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    // read file and return its string data
     private String readFile(String FileName) {
         File file = new File(getFilesDir(),FileName);
         StringBuilder text = new StringBuilder();
@@ -153,14 +268,14 @@ public class MainActivity extends AppCompatActivity {
 
     // refresh mods list
     private void refreshModsList() {
-        download("https://github.com/" + repoArray[0] + "/BMRepository/raw/master/" + locale + ".plist", getFilesDir() + "/" + repoArray[0] + "_" + locale + ".plist", getApplicationContext());
+        download("https://github.com/" + repoArray.get(0) + "/BMRepository/raw/master/" + locale + ".plist", getFilesDir() + "/" + repoArray.get(0) + "_" + locale + ".plist", getApplicationContext());
         while (!downloadFinished) {}
 
         PListXMLParser parser = new PListXMLParser();
         PListXMLHandler handler = new PListXMLHandler();
         parser.setHandler(handler);
         try {
-            parser.parse(readFile(repoArray[0] + "_" + locale + ".plist"));
+            parser.parse(readFile(repoArray.get(0) + "_" + locale + ".plist"));
             PList actualPList = ((PListXMLHandler) parser.getHandler()).getPlist();
             LinkedHashMap<String,PListObject> modCategoryPlist = ((Dict)actualPList.getRootElement()).getConfigMap();
             modCategoryArray = new ArrayList<String>(modCategoryPlist.keySet());
@@ -180,43 +295,14 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-}
 
-class ModSection extends StatelessSection {
-    String title;
-    List<String> list;
-
-    public ModSection(String title, List<String> list) {
-        super(R.layout.section_header, R.layout.section_item);
-        this.title = title;
-        this.list = list;
-    }
-
-    @Override
-    public int getContentItemsTotal() {
-        return list.size();
-    }
-
-    @Override
-    public RecyclerView.ViewHolder getHeaderViewHolder(View view) {
-        return new HeaderViewHolder(view);
-    }
-
-    @Override
-    public RecyclerView.ViewHolder getItemViewHolder(View view) {
-        return new ItemViewHolder(view);
-    }
-
-    @Override
-    public void onBindHeaderViewHolder(RecyclerView.ViewHolder holder) {
-        HeaderViewHolder headerHolder = (HeaderViewHolder) holder;
-        headerHolder.modCategory.setText(getName(title));
-    }
-
-    @Override
-    public void onBindItemViewHolder(RecyclerView.ViewHolder holder, int position) {
-        final ItemViewHolder itemHolder = (ItemViewHolder) holder;
-        itemHolder.modName.setText(getName(list.get(position)));
+    public String getID(String string) {
+        String[] array = string.split(":",-1);
+        if (array.length == 2) {
+            return array[1];
+        } else {
+            return "error";
+        }
     }
 
     public String getName(String string) {
@@ -228,12 +314,66 @@ class ModSection extends StatelessSection {
         }
     }
 
-    public String getID(String string) {
-        String[] array = string.split(":",-1);
-        if (array.length == 2) {
-            return array[1];
-        } else {
-            return "error";
+    public String getFullID(boolean b, int i, int j, int k) {
+        if (b) { // with repo name
+            return repoArray.get(currentRepo) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+        } else { // without repo name
+            return getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+        }
+    }
+
+    class ModSection extends StatelessSection {
+        String title;
+        List<String> list;
+        int section;
+
+        public ModSection(int section) {
+            super(R.layout.section_header, R.layout.section_item);
+            this.title = modCategoryArray.get(section);
+            this.list = modNameArray.get(section);
+            this.section = section;
+        }
+
+        @Override
+        public int getContentItemsTotal() {
+            return list.size();
+        }
+
+        @Override
+        public RecyclerView.ViewHolder getHeaderViewHolder(View view) {
+            return new com.subdiox.blitzmodder.HeaderViewHolder(view);
+        }
+
+        @Override
+        public RecyclerView.ViewHolder getItemViewHolder(View view) {
+            return new com.subdiox.blitzmodder.ItemViewHolder(view);
+        }
+
+        @Override
+        public void onBindHeaderViewHolder(RecyclerView.ViewHolder holder) {
+            com.subdiox.blitzmodder.HeaderViewHolder headerHolder = (com.subdiox.blitzmodder.HeaderViewHolder) holder;
+            headerHolder.modCategory.setText(getName(title));
+        }
+
+        @Override
+        public void onBindItemViewHolder(RecyclerView.ViewHolder holder, final int position) {
+            final com.subdiox.blitzmodder.ItemViewHolder itemHolder = (com.subdiox.blitzmodder.ItemViewHolder) holder;
+            itemHolder.modName.setText(getName(list.get(position)));
+            itemHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // initialize intent
+                    Intent intent = new Intent();
+                    intent.setClassName("com.subdiox.blitzmodder", "com.subdiox.blitzmodder.SubActivity");
+
+                    // set intent extra data
+                    intent.putExtra("section", section);
+                    intent.putExtra("position", position);
+
+                    // start intent
+                    startActivity(intent);
+                }
+            });
         }
     }
 }
@@ -250,6 +390,6 @@ class ItemViewHolder extends RecyclerView.ViewHolder {
     public final TextView modName;
     public ItemViewHolder(View view) {
         super(view);
-        modName = (TextView)itemView.findViewById(R.id.modName);
+        modName = (TextView)itemView.findViewById(R.id.modDetail);
     }
 }

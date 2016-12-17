@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:id="@+id/rootView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:background="@drawable/selector_item"
+    android:clickable="true">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/divider_color" />
+
+    <TextView
+        android:text="Text Text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/installedText"
+        android:textSize="12sp"
+        android:textColor="@color/colorPrimary"
+        android:layout_alignBottom="@+id/installCheckBox"
+        android:layout_alignLeft="@+id/modDetail"
+        android:layout_alignStart="@+id/modDetail"
+        android:layout_marginBottom="-5dp" />
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/installCheckBox"
+        android:layout_marginRight="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="11dp"
+        tools:text="Item test text"
+        android:id="@+id/modDetail"
+        android:layout_marginStart="11dp"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:layout_alignTop="@+id/installCheckBox"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="-5dp" />
+
+</RelativeLayout>

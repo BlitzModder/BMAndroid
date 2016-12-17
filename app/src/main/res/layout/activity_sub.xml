@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context="com.subdiox.blitzmodder.MainActivity">
+    tools:context="com.subdiox.blitzmodder.SubActivity">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -21,18 +21,7 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/applyButton"
-        app:layout_anchor="@+id/include"
-        app:layout_anchorGravity="bottom|right"
-        android:layout_gravity="top|left"
-        android:textAllCaps="false"
-        android:text="@string/action_apply" />
-
-    <include layout="@layout/content_main"
-        android:id="@+id/include"
-        android:layout_height="438dp" />
+    <include layout="@layout/content_sub"
+        android:id="@+id/include2" />
 
 </android.support.design.widget.CoordinatorLayout>

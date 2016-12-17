@@ -10,8 +10,8 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.subdiox.blitzmodder.MainActivity"
-    tools:showIn="@layout/activity_main">
+    tools:context="com.subdiox.blitzmodder.SubActivity"
+    tools:showIn="@layout/activity_sub">
 
     <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
@@ -19,7 +19,5 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:id="@+id/recyclerView"
-        android:layout_marginBottom="35dp" />
-
+        android:id="@+id/subRecyclerView" />
 </RelativeLayout>

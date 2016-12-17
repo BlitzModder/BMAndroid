@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="15dp"
         tools:text="Item test text"
-        android:id="@+id/modName"
+        android:id="@+id/modDetail"
         android:layout_centerVertical="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
