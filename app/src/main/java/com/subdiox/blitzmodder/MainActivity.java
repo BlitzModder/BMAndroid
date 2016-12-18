@@ -152,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < modCategoryArray.size(); i++) {
             for (int j = 0; j < modNameArray.get(i).size(); j++) {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
-                    if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
+                    if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
                         applyNeeded = true;
                         if (!installWritten) {
                             message += getResources().getString(R.string.install);
@@ -160,7 +160,14 @@ public class MainActivity extends AppCompatActivity {
                         }
                         message += "\n";
                         message += " - " + getName(modDetailArray.get(i).get(j).get(k));
-                    } else if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < modCategoryArray.size(); i++) {
+            for (int j = 0; j < modNameArray.get(i).size(); j++) {
+                for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
+                    if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
                         applyNeeded = true;
                         if (!removeWritten) {
                             if (installWritten) {
@@ -175,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+
         if (applyNeeded) {
             alertDialog.setTitle(getResources().getString(R.string.confirm_title));
             alertDialog.setMessage(message);
