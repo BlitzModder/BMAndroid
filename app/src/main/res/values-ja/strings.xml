@@ -27,4 +27,21 @@
     <string name="title_activity_sub">SubActivity</string>
     <string name="no_changes_title">注意</string>
     <string name="no_changes_message">変更はありません。</string>
+    <string name="back_button_title">Modリストに戻る</string>
+    <string name="blitz_check_title">注意</string>
+    <string name="blitz_error_title">エラー</string>
+    <string name="blitz_initial_check">Blitzを内部ストレージと外部SDカードのどちらにインストールしましたか？</string>
+    <string name="blitz_not_initialized">World of Tanks Blitzはインストールされていますが、初期化されていません。アプリを開いて初回ダウンロードを行ってください。</string>
+    <string name="blitz_not_installed">World of Tanks Blitzがインストールされていません。</string>
+    <string name="external">external</string>
+    <string name="external_full">外部SDカード</string>
+    <string name="internal">internal</string>
+    <string name="internal_full">内部ストレージ</string>
+    <string name="main_menu_title">Modリスト</string>
+    <string name="process_menu_title">実行中</string>
+    <string name="recheck">再確認</string>
+    <string name="connection_error_message">インターネット接続がオフラインのようです。</string>
+    <string name="connection_error_title">エラー</string>
+    <string name="okay">OK</string>
+    <string name="sdcard_not_supported">SDカードは現在サポートされておりません。BlitzModderが対応するまでお待ちください。</string>
 </resources>

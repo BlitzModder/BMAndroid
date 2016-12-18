@@ -1,10 +1,13 @@
 package com.subdiox.blitzmodder;
 
-import android.content.Context;
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.net.Uri;
 import android.os.Bundle;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.preference.PreferenceManager;
+import android.os.Handler;
+import android.support.v4.provider.DocumentFile;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -25,10 +28,12 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -37,6 +42,8 @@ import java.util.List;
 import java.util.Locale;
 
 import io.github.luizgrp.sectionedrecyclerviewadapter.*;
+
+import static android.os.Environment.getExternalStorageDirectory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,6 +61,10 @@ public class MainActivity extends AppCompatActivity {
     public static String locale;
     public static boolean downloadFinished;
     public static AlertDialog.Builder alertDialog;
+    public static String blitzMessage;
+    public static boolean internal;
+    public static Handler handler;
+    public static boolean connectionError;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +72,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.pref_general, false);
+        handler = new Handler();
+        setTitle(getResources().getString(R.string.main_menu_title));
 
         // get locale
         locale = Locale.getDefault().getLanguage();
@@ -103,6 +115,8 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.create().show();
             }
         });
+
+        checkBlitzExists();
     }
 
     public void getUserSettings() {
@@ -113,6 +127,18 @@ public class MainActivity extends AppCompatActivity {
         buttonArray = userSettings.buttonArray;
         installedArray = userSettings.installedArray;
         blitzPath = userSettings.blitzPath;
+        internal = userSettings.internal;
+    }
+
+    public void saveUserSettings() {
+        // save preference variables
+        userSettings.repoArray = repoArray;
+        userSettings.currentRepo = currentRepo;
+        userSettings.buttonArray = buttonArray;
+        userSettings.installedArray = installedArray;
+        userSettings.blitzPath = blitzPath;
+        userSettings.internal = internal;
+        userSettings.saveInstance(getApplicationContext());
     }
 
     public void prepareAlertDialog() {
@@ -126,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < modCategoryArray.size(); i++) {
             for (int j = 0; j < modNameArray.get(i).size(); j++) {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
-                    if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
+                    if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
                         applyNeeded = true;
                         if (!installWritten) {
                             message += getResources().getString(R.string.install);
@@ -134,11 +160,11 @@ public class MainActivity extends AppCompatActivity {
                         }
                         message += "\n";
                         message += " - " + getName(modDetailArray.get(i).get(j).get(k));
-                    } else if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
+                    } else if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
                         applyNeeded = true;
                         if (!removeWritten) {
                             if (installWritten) {
-                                message += "\n";
+                                message += "\n\n";
                             }
                             message += getResources().getString(R.string.remove);
                             removeWritten = true;
@@ -156,7 +182,12 @@ public class MainActivity extends AppCompatActivity {
                     "OK",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
-                            // OK ボタンクリック処理
+                            // initialize intent
+                            Intent intent = new Intent();
+                            intent.setClassName("com.subdiox.blitzmodder", "com.subdiox.blitzmodder.ProcessActivity");
+
+                            // start intent
+                            startActivity(intent);
                         }
                     });
             alertDialog.setNegativeButton(
@@ -204,12 +235,119 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private static void checkBlitzExists() {
-
+    private void checkBlitzExists() {
+        System.out.println("blitzPath: " + blitzPath);
+        /*if (blitzPath.equals("")) {
+            alertDialog = new AlertDialog.Builder(this);
+            alertDialog.setTitle(getResources().getString(R.string.blitz_check_title));
+            blitzMessage = getResources().getString(R.string.blitz_initial_check);
+            alertDialog.setMessage(blitzMessage);
+            blitzMessage = "";
+            alertDialog.setNegativeButton(
+                    getResources().getString(R.string.internal),
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            blitzInternalCheck();
+                        }
+                    });
+            alertDialog.setPositiveButton(
+                    getResources().getString(R.string.external),
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            blitzExternalCheck();
+                        }
+                    });
+            alertDialog.create().show();
+        } else if (blitzPath.equals("error")) {
+            alertDialog = new AlertDialog.Builder(this);
+            alertDialog.setTitle(getResources().getString(R.string.blitz_error_title));
+            alertDialog.setMessage(blitzMessage);
+            alertDialog.setPositiveButton(
+                    getResources().getString(R.string.recheck),
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            blitzPath = "";
+                            checkBlitzExists();
+                        }
+                    });
+            alertDialog.create().show();
+        } else {
+            if (internal) {
+                blitzInternalCheck();
+            } else {
+                blitzExternalCheck();
+            }
+        }*/
+        if (blitzPath.equals("error")) {
+            alertDialog = new AlertDialog.Builder(this);
+            alertDialog.setTitle(getResources().getString(R.string.blitz_error_title));
+            alertDialog.setMessage(blitzMessage);
+            alertDialog.setPositiveButton(
+                    getResources().getString(R.string.recheck),
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            blitzPath = "";
+                            checkBlitzExists();
+                        }
+                    });
+            alertDialog.create().show();
+        } else {
+            blitzInternalCheck();
+        }
     }
 
+    public void blitzInternalCheck() {
+        /*File blitz = new File(getExternalStorageDirectory() + "/Android/data/net.wargaming.wot.blitz");
+        if (blitz.exists()) {
+            File blitzData = new File(getExternalStorageDirectory() + "/Android/data/net.wargaming.wot.blitz/files/Data");
+            if (blitzData.exists()) {
+                blitzPath = getExternalStorageDirectory() + "/Android/data/net.wargaming.wot.blitz/files/Data";
+            } else {
+                blitzPath = "error";
+                blitzMessage = getResources().getString(R.string.);
+                checkBlitzExists();
+            }
+        } else {
+            blitzPath = "error";
+            blitzMessage = getResources().getString(R.string.sdcard_not_supported);
+            checkBlitzExists();
+        }*/
+        File blitzData = new File(getExternalStorageDirectory() + "/Android/data/net.wargaming.wot.blitz/files/Data");
+        if (blitzData.exists()) {
+            blitzPath = getExternalStorageDirectory() + "/Android/data/net.wargaming.wot.blitz/files/Data";
+        } else {
+            blitzPath = "error";
+            blitzMessage = getResources().getString(R.string.sdcard_not_supported);
+            checkBlitzExists();
+        }
+        saveUserSettings();
+    }
+
+    /*public void blitzExternalCheck() {
+        File blitz = new File("/storage/sdcard1/Android/data/net.wargaming.wot.blitz");
+        if (blitz.exists()) {
+            File blitzData = new File("/storage/sdcard1/Android/data/net.wargaming.wot.blitz/files/Data");
+            if (blitzData.exists()) {
+                blitzPath = "/storage/sdcard1/Android/data/net.wargaming.wot.blitz/files/Data";
+                userSettings.saveInstance(getApplicationContext());
+            } else {
+                blitzPath = "error";
+                userSettings.saveInstance(getApplicationContext());
+                blitzMessage = getResources().getString(R.string.blitz_not_initialized);
+                checkBlitzExists();
+            }
+        } else {
+            blitzPath = "error";
+            userSettings.saveInstance(getApplicationContext());
+            blitzMessage = getResources().getString(R.string.blitz_not_installed);
+            checkBlitzExists();
+        }
+        saveUserSettings();
+    }*/
+
     // download from url and save as a file
-    private static void download(final String urlString, final String path, final Context c) {
+    public void download(final String urlString, final String path) {
+        connectionError = false;
         downloadFinished = false;
         new Thread(new Runnable() {
             @Override
@@ -237,6 +375,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    connectionError = true;
                 } finally {
                     if (con != null) {
                         con.disconnect();
@@ -268,9 +407,26 @@ public class MainActivity extends AppCompatActivity {
 
     // refresh mods list
     private void refreshModsList() {
-        download("https://github.com/" + repoArray.get(0) + "/BMRepository/raw/master/" + locale + ".plist", getFilesDir() + "/" + repoArray.get(0) + "_" + locale + ".plist", getApplicationContext());
+        download("https://github.com/" + repoArray.get(0) + "/BMRepository/raw/master/" + locale + ".plist", getFilesDir() + "/" + repoArray.get(0) + "_" + locale + ".plist");
         while (!downloadFinished) {}
-
+        if (connectionError) {
+            alertDialog = new AlertDialog.Builder(this);
+            alertDialog.setCancelable(false);
+            alertDialog.setTitle(getResources().getString(R.string.connection_error_title));
+            alertDialog.setMessage(getResources().getString(R.string.connection_error_message));
+            alertDialog.setPositiveButton(
+                    getResources().getString(R.string.recheck),
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            refreshModsList();
+                        }
+                    });
+            handler.post(new Runnable() {
+                public void run() {
+                    alertDialog.create().show();
+                }
+            });
+        }
         PListXMLParser parser = new PListXMLParser();
         PListXMLHandler handler = new PListXMLHandler();
         parser.setHandler(handler);

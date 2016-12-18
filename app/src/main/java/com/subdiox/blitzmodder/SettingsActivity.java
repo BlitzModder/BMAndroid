@@ -4,7 +4,6 @@ package com.subdiox.blitzmodder;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +21,15 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
             String stringValue = value.toString();
+            MainActivity mainActivity = new MainActivity();
+            //Context c = mainActivity.getApplicationContext();
+            //UserSettings userSettings = UserSettings.getInstance(c);
+            if (stringValue.equals("internal")) {
+                mainActivity.internal = true;
+            } else if (stringValue.equals("external")) {
+                mainActivity.internal = false;
+            }
+            //userSettings.saveInstance(c);
 
             if (preference instanceof ListPreference) {
                 ListPreference listPreference = (ListPreference) preference;
@@ -100,13 +108,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             setHasOptionsMenu(true);
 
             ListPreference disk = (ListPreference)findPreference("disk");
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
-            if (prefs.getString("disk", "").equals("internal")) {
+            UserSettings userSettings = UserSettings.getInstance(getActivity().getApplicationContext());
+            if (userSettings.internal) {
                 disk.setValueIndex(0);
-            } else if (prefs.getString("disk","").equals("external")) {
+            } else {
                 disk.setValueIndex(1);
             }
-
             bindPreferenceSummaryToValue(findPreference("disk"));
         }
 

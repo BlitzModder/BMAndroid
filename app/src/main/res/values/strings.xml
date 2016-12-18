@@ -15,17 +15,38 @@
     <string name="no_changes_title">Notice</string>
     <string name="no_changes_message">There are no changes to be applied.</string>
 
+    <string name="back_button_title">Return to Mods List</string>
+    <string name="main_menu_title">Mods List</string>
+    <string name="process_menu_title">Running</string>
+
+    <string name="internal_full">Internal Storage</string>
+    <string name="external_full">External SD Card</string>
+    <string name="internal">internal</string>
+    <string name="external">external</string>
+    <string name="sdcard_not_supported">SD card is not supported yet. Please wait for BlitzModder to support it.</string>
+
+    <string name="connection_error_title">Error</string>
+    <string name="connection_error_message">Your internet connection seems to be offline.</string>
+    <string name="okay">OK</string>
+
+    <string name="blitz_check_title">Notice</string>
+    <string name="blitz_initial_check">Which disk did you install Blitz in, internal storage or external sd card?</string>
+    <string name="blitz_error_title">Error</string>
+    <string name="blitz_not_initialized">World of Tanks Blitz is installed, but not initialized.\nPlease open it and download its data.</string>
+    <string name="blitz_not_installed">World of Tanks Blitz is not installed.\nPlease install it from Google Play.</string>
+    <string name="recheck">Recheck</string>
+
     <!-- General settings -->
     <string name="pref_header_general">General</string>
 
     <string name="pref_title_disk">Blitz Save Disk</string>
     <string-array name="pref_list_title_disk">
-        <item>Internal Storage</item>
-        <item>External SD Card</item>
+        <item>@string/internal_full</item>
+        <item>@string/external_full</item>
     </string-array>
     <string-array name="pref_list_value_disk">
-        <item>internal</item>
-        <item>external</item>
+        <item>@string/internal</item>
+        <item>@string/external</item>
     </string-array>
 
     <!-- Contact settings -->

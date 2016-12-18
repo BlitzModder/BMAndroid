@@ -19,6 +19,7 @@ public class UserSettings {
     public ArrayList<String> buttonArray;
     public ArrayList<String> installedArray;
     public String blitzPath;
+    public boolean internal;
 
     private static final String USER_SETTING_PREF_KEY="USER_SETTING";
 
@@ -26,9 +27,7 @@ public class UserSettings {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         Gson gson = new Gson();
         String userSettingsString = prefs.getString(USER_SETTING_PREF_KEY, "");
-
         UserSettings instance;
-
         if (!TextUtils.isEmpty(userSettingsString)) {
             instance = gson.fromJson(userSettingsString, UserSettings.class);
         } else {
@@ -45,6 +44,7 @@ public class UserSettings {
         instance.buttonArray = new ArrayList<String>();
         instance.installedArray = new ArrayList<String>();
         instance.blitzPath = "";
+        instance.internal = true;
         return instance;
     }
 

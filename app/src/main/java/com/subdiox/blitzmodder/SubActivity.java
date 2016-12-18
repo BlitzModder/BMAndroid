@@ -1,5 +1,6 @@
 package com.subdiox.blitzmodder;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -56,12 +57,8 @@ public class SubActivity extends AppCompatActivity {
         section = intent.getIntExtra("section", 0);
         position = intent.getIntExtra("position", 0);
 
-        // get preference variables
-        userSettings = UserSettings.getInstance(getApplicationContext());
-        repoArray = userSettings.repoArray;
-        currentRepo = userSettings.currentRepo;
-        buttonArray = userSettings.buttonArray;
-        installedArray = userSettings.installedArray;
+        // get user settings
+        getUserSettings();
 
         // set title
         setTitle(getName(modNameArray.get(section).get(position)));
@@ -73,6 +70,24 @@ public class SubActivity extends AppCompatActivity {
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.subRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         recyclerView.setAdapter(sectionAdapter);
+    }
+
+    public void getUserSettings() {
+        // get preference variables
+        userSettings = UserSettings.getInstance(getApplicationContext());
+        repoArray = userSettings.repoArray;
+        currentRepo = userSettings.currentRepo;
+        buttonArray = userSettings.buttonArray;
+        installedArray = userSettings.installedArray;
+    }
+
+    public void saveUserSettings() {
+        // save preference variables
+        userSettings.repoArray = repoArray;
+        userSettings.currentRepo = currentRepo;
+        userSettings.buttonArray = buttonArray;
+        userSettings.installedArray = installedArray;
+        userSettings.saveInstance(getApplicationContext());
     }
 
     public String getName(String string) {
@@ -127,8 +142,10 @@ public class SubActivity extends AppCompatActivity {
 
             if (installedArray.contains(getFullID(true, section, position, subPosition))) {
                 itemHolder.installedText.setText(getResources().getString(R.string.installed));
+                itemHolder.installedText.setTextColor(Color.BLUE);
             } else {
                 itemHolder.installedText.setText(getResources().getString(R.string.not_installed));
+                itemHolder.installedText.setTextColor(Color.GRAY);
             }
 
             itemHolder.checkbox.setOnCheckedChangeListener(null);
@@ -136,13 +153,13 @@ public class SubActivity extends AppCompatActivity {
             itemHolder.checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    userSettings.getInstance(getApplicationContext());
+                    getUserSettings();
                     if (isChecked) {
                         buttonArray.add(getFullID(true, section, position, subPosition));
                     } else {
                         buttonArray.remove(getFullID(true, section, position, subPosition));
                     }
-                    userSettings.saveInstance(getApplicationContext());
+                    saveUserSettings();
                 }
             });
         }
