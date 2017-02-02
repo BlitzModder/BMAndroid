@@ -6,6 +6,7 @@ package com.subdiox.blitzmodder;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -20,6 +21,7 @@ public class UserSettings {
     public ArrayList<String> installedArray;
     public String blitzPath;
     public boolean internal;
+    public String treeUriString;
 
     private static final String USER_SETTING_PREF_KEY="USER_SETTING";
 
@@ -45,6 +47,7 @@ public class UserSettings {
         instance.installedArray = new ArrayList<String>();
         instance.blitzPath = "";
         instance.internal = true;
+        instance.treeUriString = "";
         return instance;
     }
 

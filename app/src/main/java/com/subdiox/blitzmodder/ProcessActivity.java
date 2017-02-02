@@ -1,10 +1,15 @@
 package com.subdiox.blitzmodder;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
-import android.os.storage.StorageManager;
+import android.os.PowerManager;
+import android.support.v4.provider.DocumentFile;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -13,23 +18,21 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.core.ZipFile;
@@ -46,12 +49,14 @@ public class ProcessActivity extends AppCompatActivity {
     public static ArrayList<String> modCategoryArray;
     public static ArrayList<ArrayList<String>> modNameArray;
     public static ArrayList<ArrayList<ArrayList<String>>> modDetailArray;
-    public static TextView logView;
-    public static ScrollView scrollView;
-    public static ProgressBar progressBar;
-    public static Button backButton;
-    public static boolean downloadFinished;
-    public static Handler handler;
+    public static boolean internal;
+    public static String treeUriString;
+    public static Uri treeUri;
+    public TextView logView;
+    public ScrollView scrollView;
+    public ProgressBar progressBar;
+    public Button backButton;
+    public Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,10 +74,6 @@ public class ProcessActivity extends AppCompatActivity {
         });
         backButton.setVisibility(View.INVISIBLE);
 
-        // initialize progress bar
-        progressBar = (ProgressBar)findViewById(R.id.progressBar);
-        progressBar.setMax(100);
-
         // initialize scroll/log view
         scrollView = (ScrollView)findViewById(R.id.scrollView);
         logView = (TextView)findViewById(R.id.logView);
@@ -87,11 +88,24 @@ public class ProcessActivity extends AppCompatActivity {
         // get application variables
         app = (BMApplication)this.getApplication();
 
+        // initialize progress bar
+        progressBar = (ProgressBar)findViewById(R.id.progressBar);
+
         modCategoryArray = app.modCategoryArray;
         modNameArray = app.modNameArray;
         modDetailArray = app.modDetailArray;
 
         handler = new Handler();
+
+        getUserSettings();
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (!treeUriString.equals("")) {
+                treeUri = Uri.parse(treeUriString);
+            } else {
+                Toast.makeText(getApplicationContext(), "Error: Tree URI is empty", Toast.LENGTH_LONG).show();
+            }
+        }
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -100,23 +114,27 @@ public class ProcessActivity extends AppCompatActivity {
         }).start();
     }
 
+    // get preference variables
     public void getUserSettings() {
-        // get preference variables
         userSettings = UserSettings.getInstance(getApplicationContext());
         repoArray = userSettings.repoArray;
         currentRepo = userSettings.currentRepo;
         buttonArray = userSettings.buttonArray;
         installedArray = userSettings.installedArray;
         blitzPath = userSettings.blitzPath;
+        internal = userSettings.internal;
+        treeUriString = userSettings.treeUriString;
     }
 
+    // save preference variables
     public void saveUserSettings() {
-        // save preference variables
         userSettings.repoArray = repoArray;
         userSettings.currentRepo = currentRepo;
         userSettings.buttonArray = buttonArray;
         userSettings.installedArray = installedArray;
         userSettings.blitzPath = blitzPath;
+        userSettings.internal = internal;
+        userSettings.treeUriString = treeUriString;
         userSettings.saveInstance(getApplicationContext());
     }
 
@@ -138,13 +156,19 @@ public class ProcessActivity extends AppCompatActivity {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
                     if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
                         log("Downloading the removal data of " + getFullID(false,i,j,k) + " ...");
-                        downloadData(false,i,j,k);
-                        while (!downloadFinished) {}
+                        final int fi = i;
+                        final int fj = j;
+                        final int fk = k;
+                        try {
+                            new DownloadTask(this).execute("https://github.com/" + repoArray.get(currentRepo) + "/BMRepository/raw/master/Remove/" + getFullID(false,i,j,k) + ".zip").get();
+                        } catch (ExecutionException | InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         log("Done.\n");
-                        log("Removing " + getFullID(false,i,j,k) + " ...");
+                        log("Removing " + getFullID(false,fi,fj,fk) + " ...");
                         installData();
                         getUserSettings();
-                        installedArray.remove(getFullID(true,i,j,k));
+                        installedArray.remove(getFullID(true,fi,fj,fk));
                         saveUserSettings();
                         log("Done.\n");
                     }
@@ -156,13 +180,19 @@ public class ProcessActivity extends AppCompatActivity {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
                     if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
                         log("Downloading " + getFullID(false,i,j,k) + " ...");
-                        downloadData(true,i,j,k);
-                        while (!downloadFinished) {}
+                        final int fi = i;
+                        final int fj = j;
+                        final int fk = k;
+                        try {
+                            new DownloadTask(this).execute("https://github.com/" + repoArray.get(currentRepo) + "/BMRepository/raw/master/Install/" + getFullID(false, i, j, k) + ".zip").get();
+                        } catch (ExecutionException | InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         log("Done.\n");
-                        log("Installing " + getFullID(false,i,j,k) + " ...");
+                        log("Installing " + getFullID(false,fi,fj,fk) + " ...");
                         installData();
                         getUserSettings();
-                        installedArray.add(getFullID(true,i,j,k));
+                        installedArray.add(getFullID(true,fi,fj,fk));
                         saveUserSettings();
                         log("Done.\n");
                     }
@@ -183,73 +213,6 @@ public class ProcessActivity extends AppCompatActivity {
                 logView.append(str);
             }
         });
-    }
-
-    // download from url and save as a file
-    public void download(final String urlString, final String path) {
-        downloadFinished = false;
-        handler.post(new Runnable() {
-            public void run() {
-                progressBar.setProgress(0);
-            }
-        });
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                HttpURLConnection con = null;
-                try {
-                    final URL url = new URL(urlString);
-                    con = (HttpURLConnection) url.openConnection();
-                    con.connect();
-                    int fileLength = con.getContentLength();
-                    final int status = con.getResponseCode();
-                    if (status == HttpURLConnection.HTTP_OK) {
-                        final InputStream input = con.getInputStream();
-                        final DataInputStream dataInput = new DataInputStream(input);
-                        final FileOutputStream fileOutput = new FileOutputStream(path);
-                        final DataOutputStream dataOut = new DataOutputStream(fileOutput);
-                        final byte[] buffer = new byte[4096];
-                        int readByte;
-                        int total = 0;
-                        while((readByte = dataInput.read(buffer)) != -1) {
-                            total += readByte;
-                            final int progress = total * 100 / fileLength;
-                            handler.post(new Runnable() {
-                                public void run() {
-                                    progressBar.setProgress(progress);
-                                }
-                            });
-
-                            dataOut.write(buffer, 0, readByte);
-                        }
-                        dataInput.close();
-                        fileOutput.close();
-                        dataInput.close();
-                        input.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    if (con != null) {
-                        con.disconnect();
-                    }
-                    downloadFinished = true;
-                    handler.post(new Runnable() {
-                        public void run() {
-                            progressBar.setProgress(100);
-                        }
-                    });
-                }
-            }
-        }).start();
-    }
-
-    public void downloadData(boolean install, int i, int j, int k) {
-        if (install) {
-            download("https://github.com/" + repoArray.get(currentRepo) + "/BMRepository/raw/master/Install/" + getFullID(false,i,j,k) + ".zip", getCacheDir() + "/Data.zip");
-        } else {
-            download("https://github.com/" + repoArray.get(currentRepo) + "/BMRepository/raw/master/Remove/" + getFullID(false,i,j,k) + ".zip", getCacheDir() + "/Data.zip");
-        }
     }
 
     private static void delete (File f) {
@@ -309,18 +272,17 @@ public class ProcessActivity extends AppCompatActivity {
                 progressBar.setIndeterminate(true);
             }
         });
-        File dataDir = new File(getCacheDir() + "/Data");
+        File dataDir = new File(getExternalCacheDir() + "/Data");
         delete(dataDir);
         try {
-            ZipFile zipFile = new ZipFile(getCacheDir() + "/Data.zip");
-            zipFile.extractAll(getCacheDir().toString());
+            ZipFile zipFile = new ZipFile(getExternalCacheDir() + "/Data.zip");
+            zipFile.extractAll(getExternalCacheDir().toString());
         } catch (ZipException e) {
             e.printStackTrace();
         }
-        File modData = new File(getCacheDir() + "/Data");;
         File blitzData = new File(blitzPath);
         try {
-            copyDirectory(modData, blitzData);
+            copyDirectory(dataDir, blitzData);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -345,6 +307,104 @@ public class ProcessActivity extends AppCompatActivity {
             return repoArray.get(currentRepo) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         } else { // without repo name
             return getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+        }
+    }
+
+    public class DownloadTask extends AsyncTask<String, Integer, String> {
+
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+
+        public DownloadTask(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        protected String doInBackground(String... sUrl) {
+            InputStream input = null;
+            OutputStream output = null;
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(sUrl[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                // expect HTTP 200 OK, so we don't mistakenly save error report
+                // instead of the file
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    return "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage();
+                }
+
+                // this will be useful to display download percentage
+                // might be -1: server did not report the length
+                int fileLength = connection.getContentLength();
+
+                // download the file
+                input = connection.getInputStream();
+                output = new FileOutputStream(getExternalCacheDir() + "/Data.zip");
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    // publishing the progress....
+                    if (fileLength > 0) // only if total length is known
+                        publishProgress((int) (total * 100 / fileLength));
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                return e.toString();
+            } finally {
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    getClass().getName());
+            mWakeLock.acquire();
+            progressBar.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+            // if we get here, length is known, now set indeterminate to false
+            progressBar.setIndeterminate(false);
+            progressBar.setMax(100);
+            progressBar.setProgress(progress[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
+            if (result != null) {
+                Toast.makeText(context, "Download error: " + result, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

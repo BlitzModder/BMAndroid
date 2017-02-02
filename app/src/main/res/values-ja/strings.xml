@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BlitzModder</string>
+    <string name="title_activity_sub">SubActivity</string>
     <string name="action_settings">設定</string>
     <string name="action_apply">適用</string>
     <string name="not_installed">未インストール</string>
@@ -24,7 +25,6 @@
         <item>内部ストレージ</item>
         <item>外部SDカード</item>
     </string-array>
-    <string name="title_activity_sub">SubActivity</string>
     <string name="no_changes_title">注意</string>
     <string name="no_changes_message">変更はありません。</string>
     <string name="back_button_title">Modリストに戻る</string>
@@ -43,5 +43,7 @@
     <string name="connection_error_message">インターネット接続がオフラインのようです。</string>
     <string name="connection_error_title">エラー</string>
     <string name="okay">OK</string>
-    <string name="sdcard_not_supported">SDカードは現在サポートされておりません。BlitzModderが対応するまでお待ちください。</string>
+    <string name="permission_required">BlitzModderが正常に動作するためには、BlitzModderにストレージの書き込み権限を与える必要があります。</string>
+    <string name="sdcard_permission_message">SDカードを選択してBlitzModderのアクセスを許可してください。</string>
+    <string name="sdcard_permission_title">SDカード (実験的)</string>
 </resources>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BlitzModder</string>
+    <string name="title_activity_sub">SubActivity</string>
     <string name="action_settings">Settings</string>
     <string name="action_apply">Apply</string>
-    <string name="title_activity_sub">SubActivity</string>
     <string name="not_installed">Not Installed</string>
     <string name="installed">Installed</string>
     <string name="title_activity_settings">Settings</string>
@@ -23,18 +23,17 @@
     <string name="external_full">External SD Card</string>
     <string name="internal">internal</string>
     <string name="external">external</string>
-    <string name="sdcard_not_supported">SD card is not supported yet. Please wait for BlitzModder to support it.</string>
 
-    <string name="connection_error_title">Error</string>
+    <string name="error">Error</string>
     <string name="connection_error_message">Your internet connection seems to be offline.</string>
     <string name="okay">OK</string>
 
     <string name="blitz_check_title">Notice</string>
     <string name="blitz_initial_check">Which disk did you install Blitz in, internal storage or external sd card?</string>
-    <string name="blitz_error_title">Error</string>
     <string name="blitz_not_initialized">World of Tanks Blitz is installed, but not initialized.\nPlease open it and download its data.</string>
     <string name="blitz_not_installed">World of Tanks Blitz is not installed.\nPlease install it from Google Play.</string>
     <string name="recheck">Recheck</string>
+    <string name="permission_required">You have to permit BlitzModder to write to storage in order to make it work normally.</string>
 
     <!-- General settings -->
     <string name="pref_header_general">General</string>
@@ -58,4 +57,9 @@
     <string name="pref_description_twitter">You can follow me and send me a message on Twitter.</string>
     <string name="pref_description_website">If you have trouble using BlitzModder, refer to the usage of BlitzModder.</string>
     <string name="title_activity_confirm">Confirmation</string>
+
+    <string name="sdcard_permission_title">Grant access to SD card</string>
+    <string name="sdcard_permission_message">Please select SD card to allow BlitzModder to access it.</string>
+    <string name="sdcard_not_supported_kitkat">SD card is not supported on KitKat, because of OS restriction.\nPlease install Blitz on internal storage instead.</string>
+    <string name="some_error_occurred">Some error occurred. Please contact developer.</string>
 </resources>

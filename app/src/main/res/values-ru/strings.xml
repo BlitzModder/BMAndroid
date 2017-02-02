@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BlitzModder</string>
+    <string name="title_activity_sub">SubActivity</string>
+    <string name="action_settings">Настройки</string>
+    <string name="action_apply">Применить</string>
+    <string name="not_installed">Не установлено</string>
+    <string name="installed">Установлено</string>
+    <string name="title_activity_settings">Настройки</string>
+    <string name="install">[Установить]</string>
+    <string name="remove">[Удалить]</string>
+    <string name="confirm_title">Подтверждение</string>
+    <string name="confirm_message">Применить изменения?</string>
+    <string name="no_changes_title">Уведомление</string>
+    <string name="no_changes_message">Нет никаких изменений.</string>
+    <string name="back_button_title">Вернуться к списку модов</string>
+    <string name="main_menu_title">Список модов</string>
+    <string name="process_menu_title">Запустить</string>
+    <string name="internal_full">Внутренняя память</string>
+    <string name="external_full">Внешняя SD карта</string>
+    <string name="internal">Внутренний</string>
+    <string name="external">Внешний</string>
+    <string name="connection_error_title">Ошибка</string>
+    <string name="connection_error_message">Отсутствует подключение к интернету.</string>
+    <string name="okay">OK</string>
+    <string name="blitz_check_title">Уведомление</string>
+    <string name="blitz_initial_check">Где у Вас установлен Blitz: во внутренней памяти или на внешней SD карте?</string>
+    <string name="blitz_error_title">Ошибка</string>
+    <string name="blitz_not_initialized">World of Tanks Blitz установлен, но не скачан кэш.\nПожалуйста запустите игру и скачайте все данные.</string>
+    <string name="blitz_not_installed">World of Tanks Blitz не установлен.\nПожалуйста скачайте игру в Google Play.</string>
+    <string name="recheck">Перепроверьте</string>
+    <string name="permission_required">Вы должны дать права BlitzModder на запись в памяти, для того, чтобы он правильно работал.</string>
+    <string name="pref_header_general">Общий</string>
+    <string name="pref_title_disk">Место установки Blitz</string>
+    <string name="pref_header_contact">Контакты</string>
+    <string name="pref_title_website">Сайт BlitzModder</string>
+    <string name="pref_title_send_email">Отправить email разработчику</string>
+    <string name="pref_title_twitter">Связаться с разработчиком в Twitter</string>
+    <string name="pref_description_send_email">Если у Вас есть вопросы или пожелания, не стесняйтесь, пишите мне на email.</string>
+    <string name="pref_description_twitter">Вы всегда можете найти меня и отправить сообщение в Twitter.</string>
+    <string name="pref_description_website">Если у Вас возникли проблемы во время использования BlitzModder, перейдите в раздел "Usage" на сайте BlitzModder.</string>
+    <string name="title_activity_confirm">Подтверждение</string>
+    <string name="sdcard_permission_message">Please select SD card to allow BlitzModder to access it.</string>
+    <string name="sdcard_permission_title">SD card (Experimental)</string>
+</resources>
