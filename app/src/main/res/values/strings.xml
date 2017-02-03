@@ -62,4 +62,5 @@
     <string name="sdcard_permission_message">Please select SD card to allow BlitzModder to access it.</string>
     <string name="sdcard_not_supported_kitkat">SD card is not supported on KitKat, because of OS restriction.\nPlease install Blitz on internal storage instead.</string>
     <string name="some_error_occurred">Some error occurred. Please contact developer.</string>
+    <string name="backup_lost">\nBackup data of this mod seems to be lost! Skipping &#8230;"</string>
 </resources>

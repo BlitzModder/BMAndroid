@@ -1,9 +1,6 @@
 package com.subdiox.blitzmodder;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -22,8 +19,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,13 +28,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.core.ZipFile;
-
-import static android.os.Environment.getExternalStorageDirectory;
 
 public class ProcessActivity extends AppCompatActivity {
 
@@ -56,6 +48,7 @@ public class ProcessActivity extends AppCompatActivity {
     public static boolean internal;
     public static String treeUriString;
     public static Uri treeUri;
+    public static boolean success;
     public TextView logView;
     public ScrollView scrollView;
     public ProgressBar progressBar;
@@ -159,22 +152,15 @@ public class ProcessActivity extends AppCompatActivity {
             for (int j = 0; j < modNameArray.get(i).size(); j++) {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
                     if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
-                        log("Downloading the removal data of " + getFullID(false,i,j,k) + " ...");
-                        final int fi = i;
-                        final int fj = j;
-                        final int fk = k;
-                        try {
-                            new DownloadTask(this).execute("https://github.com/" + repoArray.get(currentRepo) + "/BMRepository/raw/master/Remove/" + getFullID(false,i,j,k) + ".zip").get();
-                        } catch (ExecutionException | InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        log("Done.\n");
-                        log("Removing " + getFullID(false,fi,fj,fk) + " ...");
-                        installData();
+                        log("Removing " + getFullID(false,i,j,k) + " ...");
+                        success = true;
+                        removeData(getFullID(false,i,j,k));
                         getUserSettings();
-                        installedArray.remove(getFullID(true,fi,fj,fk));
+                        installedArray.remove(getFullID(true,i,j,k));
                         saveUserSettings();
-                        log("Done.\n");
+                        if (success) {
+                            log("Done.\n");
+                        }
                     }
                 }
             }
@@ -184,21 +170,21 @@ public class ProcessActivity extends AppCompatActivity {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
                     if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
                         log("Downloading " + getFullID(false,i,j,k) + " ...");
-                        final int fi = i;
-                        final int fj = j;
-                        final int fk = k;
                         try {
                             new DownloadTask(this).execute("https://github.com/" + repoArray.get(currentRepo) + "/BMRepository/raw/master/Install/" + getFullID(false, i, j, k) + ".zip").get();
                         } catch (ExecutionException | InterruptedException e) {
                             e.printStackTrace();
                         }
                         log("Done.\n");
-                        log("Installing " + getFullID(false,fi,fj,fk) + " ...");
-                        installData();
+                        log("Installing " + getFullID(false,i,j,k) + " ...");
+                        success = true;
+                        installData(getFullID(false,i,j,k));
                         getUserSettings();
-                        installedArray.add(getFullID(true,fi,fj,fk));
+                        installedArray.add(getFullID(true,i,j,k));
                         saveUserSettings();
-                        log("Done.\n");
+                        if (success) {
+                            log("Done.\n");
+                        }
                     }
                 }
             }
@@ -219,22 +205,52 @@ public class ProcessActivity extends AppCompatActivity {
         });
     }
 
-    private static void delete (File f) {
-        if (!f.exists()) {
-            return;
-        }
-        if (f.isFile()) {
-            f.delete();
-        } else if (f.isDirectory()){
-            File[] files = f.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                delete(files[i]);
+    public void deleteSD(String filePath) {
+        String internalPath = Environment.getExternalStorageDirectory().toString();
+        String externalPath = "External Path";
+
+        if (treeUri != null) {
+            externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
+            if (externalPath == null) {
+                System.out.println("externalPath is null");
+                return;
             }
-            f.delete();
+        }
+
+        if (filePath.startsWith(internalPath)) {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                return;
+            }
+            if (file.isFile()) {
+                if (file.delete()) {
+                    System.out.println(file.getAbsolutePath() + " was deleted successfully.");
+                }
+            } else if (file.isDirectory()){
+                File[] files = file.listFiles();
+                for (File oneFile : files) {
+                    deleteSD(oneFile.getAbsolutePath());
+                }
+                if (file.delete()) {
+                    System.out.println(file.getAbsolutePath() + " was deleted successfully.");
+                }
+            }
+        } else if (filePath.startsWith(externalPath)) {
+            DocumentFile file = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
+            String fileRelativePath = filePath.substring(externalPath.length() + 1, filePath.length());
+            String[] filePathArray = fileRelativePath.split("/", -1);
+            for (String filePathSegment : filePathArray) {
+                file = file.findFile(filePathSegment);
+            }
+            if (file.delete()) {
+                System.out.println("The specified file in SD card was deleted successfully.");
+            } else {
+                System.out.println("The specified file in SD card was not deleted.");
+            }
         }
     }
 
-    private void copySD(String sourcePath, String targetPath) throws IOException {
+    public void copySD(String sourcePath, String targetPath, boolean backup, String modID) throws IOException {
         String internalPath = Environment.getExternalStorageDirectory().toString();
         String externalPath = "External Path";
 
@@ -248,9 +264,9 @@ public class ProcessActivity extends AppCompatActivity {
         if (sourcePath.startsWith(internalPath) && targetPath.startsWith(internalPath)) {
             File sourceFile = new File(sourcePath);
             if (sourceFile.isDirectory()) {
-                copyDirectorySD(sourcePath, targetPath);
+                copyDirectorySD(sourcePath, targetPath, backup, modID);
             } else {
-                copyFileSD(sourcePath, targetPath);
+                copyFileSD(sourcePath, targetPath, backup, modID);
             }
         } else if (sourcePath.startsWith(externalPath) || targetPath.startsWith(externalPath)) {
             DocumentFile sourceFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
@@ -264,14 +280,14 @@ public class ProcessActivity extends AppCompatActivity {
                 }
             }
             if (sourceFile.isDirectory()) {
-                copyDirectorySD(sourcePath, targetPath);
+                copyDirectorySD(sourcePath, targetPath, backup, modID);
             } else {
-                copyFileSD(sourcePath, targetPath);
+                copyFileSD(sourcePath, targetPath, backup, modID);
             }
         }
     }
 
-    private void copyDirectorySD(String sourcePath, String targetPath) throws IOException {
+    public void copyDirectorySD(String sourcePath, String targetPath, boolean backup, String modID) throws IOException {
         String internalPath = Environment.getExternalStorageDirectory().toString();
         String externalPath = "External Path";
 
@@ -289,7 +305,7 @@ public class ProcessActivity extends AppCompatActivity {
                 targetFile.mkdir();
             }
             for (String f : sourceFile.list()) {
-                copySD(new File(sourceFile, f).getAbsolutePath(), new File(targetFile, f).getAbsolutePath());
+                copySD(new File(sourceFile, f).getAbsolutePath(), new File(targetFile, f).getAbsolutePath(), backup, modID);
             }
         } else if (sourcePath.startsWith(externalPath) || targetPath.startsWith(externalPath)) {
             DocumentFile sourceFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
@@ -317,12 +333,12 @@ public class ProcessActivity extends AppCompatActivity {
             }
             for (DocumentFile f : sourceFile.listFiles()) {
                 System.out.println(sourcePath + "/" + f.getName() + ", " + targetPath + "/" + f.getName());
-                copySD(sourcePath + "/" + f.getName(), targetPath + "/" + f.getName());
+                copySD(sourcePath + "/" + f.getName(), targetPath + "/" + f.getName(), backup, modID);
             }
         }
     }
 
-    private void copyFileSD(String sourcePath, String targetPath) throws IOException {
+    public void copyFileSD(String sourcePath, String targetPath, boolean backup, String modID) throws IOException {
         String internalPath = Environment.getExternalStorageDirectory().toString();
         String externalPath = "External Path";
 
@@ -333,16 +349,41 @@ public class ProcessActivity extends AppCompatActivity {
                 return;
             }
         }
-        
+
         InputStream in;
         OutputStream out;
         int DEFAULT_BUFFER_SIZE = 1024 * 4;
         if (sourcePath.startsWith(internalPath) && targetPath.startsWith(internalPath)) {
-            File source = new File(sourcePath);
-            File target = new File(targetPath);
+            File sourceFile = new File(sourcePath);
+            File targetFile = new File(targetPath);
+            if (!sourceFile.exists()) {
+                System.out.println("sourceFile not found!");
+                log(getString(R.string.backup_lost));
+                success = false;
+                return;
+            }
+            if (!targetFile.exists()) {
+                if (!targetFile.isDirectory()) {
+                    if (targetFile.getParentFile().mkdirs()) {
+                        System.out.println("Succeeded in creating parent directory of (" + targetPath + ")");
+                    } else {
+                        System.out.println("Failed to create parent directory of (" + targetPath + ")");
+                    }
+                } else {
+                    if (targetFile.mkdirs()) {
+                        System.out.println("Succeeded in creating directory (" + targetPath + ")");
+                    } else {
+                        System.out.println("Failed to create directory (" + targetPath + ")");
+                    }
+                }
+            } else {
+                if (backup) {
+                    backupData(targetPath, modID);
+                }
+            }
             try {
-                in = new FileInputStream(source);
-                out = new FileOutputStream(target);
+                in = new FileInputStream(sourceFile);
+                out = new FileOutputStream(targetFile);
                 byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
                 int length;
                 while ((length = in.read(buf)) > 0) {
@@ -368,38 +409,67 @@ public class ProcessActivity extends AppCompatActivity {
             }
             if (targetPath.startsWith(internalPath)) {
                 targetFile = DocumentFile.fromFile(new File(targetPath));
+                if (!targetFile.exists()) {
+                    if (!targetFile.isDirectory()) {
+                        if (new File(targetPath).getParentFile().mkdirs()) {
+                            System.out.println("Succeeded in creating parent directory of (" + targetPath + ")");
+                            fileToCreate = targetFile.getName();
+                        } else {
+                            System.out.println("Failed to create parent directory of (" + targetPath + ")");
+                        }
+                    } else {
+                        if (new File(targetPath).mkdirs()) {
+                            System.out.println("Succeeded in creating directory (" + targetPath + ")");
+                        } else {
+                            System.out.println("Failed to create directory (" + targetPath + ")");
+                        }
+                    }
+                }
             } else if (targetPath.startsWith(externalPath)) {
                 String targetRelativePath = targetPath.substring(externalPath.length() + 1, targetPath.length());
                 String[] targetArray = targetRelativePath.split("/", -1);
                 for (String targetPathSegment : targetArray) {
                     DocumentFile tempTargetFile = targetFile.findFile(targetPathSegment);
-                    if (tempTargetFile != null) {
-                        targetFile = tempTargetFile;
-                    } else {
+                    System.out.println("targetFile1: " + targetFile.getName());
+                    System.out.println("targetPathSegment: " + targetPathSegment);
+                    if (targetPathSegment.equals(targetArray[targetArray.length - 1]) && tempTargetFile == null) {
                         fileToCreate = targetPathSegment;
+                    } else if (!targetPathSegment.equals(targetArray[targetArray.length - 1]) && tempTargetFile == null) {
+                        targetFile.createDirectory(targetPathSegment);
+                    } else {
+                        targetFile = tempTargetFile;
                     }
                 }
             }
             if (!sourceFile.exists()) {
-                Toast.makeText(getApplicationContext(), "sourceFile not found!", Toast.LENGTH_SHORT).show();
+                System.out.println("sourceFile not found!");
+                log(getString(R.string.backup_lost));
+                success = false;
                 return;
             }
             in = getContentResolver().openInputStream(sourceFile.getUri());
 
             if (fileToCreate.equals("")) {
+                if (backup) {
+                    System.out.println("Start backup " + targetPath + " (" + modID + ")...");
+                    backupData(targetPath, modID);
+                }
+                System.out.println("targetFile2: " + targetFile.getName());
                 out = getContentResolver().openOutputStream(targetFile.getUri());
             } else {
                 String targetMimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(fileToCreate));
                 System.out.println("targetPrefix: " + getPrefix(fileToCreate));
                 System.out.println("targetMimeType: " + targetMimeType);
-                if (targetMimeType == null) {
-                    out = getContentResolver().openOutputStream(targetFile.createFile("", fileToCreate).getUri());
+                if (targetPath.startsWith(internalPath)) {
+                    out = new FileOutputStream(new File(targetPath));
                 } else {
-                    out = getContentResolver().openOutputStream(targetFile.createFile(targetMimeType, getPrefix(fileToCreate)).getUri());
+                    if (targetMimeType == null) {
+                        out = getContentResolver().openOutputStream(targetFile.createFile("", fileToCreate).getUri());
+                    } else {
+                        out = getContentResolver().openOutputStream(targetFile.createFile(targetMimeType, getPrefix(fileToCreate)).getUri());
+                    }
                 }
-
             }
-
             try {
                 byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
                 int length;
@@ -408,7 +478,7 @@ public class ProcessActivity extends AppCompatActivity {
                 }
                 in.close();
                 out.close();
-            } catch (IOException e) {
+            } catch (IOException | NullPointerException e) {
                 e.printStackTrace();
             }
         } else {
@@ -417,17 +487,32 @@ public class ProcessActivity extends AppCompatActivity {
     }
 
     // 元データをバックアップする
-    public void backupData(String backupFilePath) {
+    public void backupData(String backupFilePath, String modID) {
         String internalPath = Environment.getExternalStorageDirectory().toString();
-        String externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
-        if (externalPath == null) {
-            System.out.println("externalPath is null");
-            return;
+        String externalPath = "External Path";
+
+        if (treeUri != null) {
+            externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
+            if (externalPath == null) {
+                System.out.println("externalPath is null");
+                return;
+            }
         }
-        if (Environment.getExternalStorageDirectory().toString())
-        copySD(backupFilePath, )
+        String backupFileRelativePath = "";
+        if (backupFilePath.startsWith(internalPath)) {
+            backupFileRelativePath = backupFilePath.substring(internalPath.length() + "/Android/data/net.wargaming.wot.blitz/files/".length(), backupFilePath.length());
+        } else if (backupFilePath.startsWith(externalPath)) {
+            backupFileRelativePath = backupFilePath.substring(externalPath.length() + "/Android/data/net.wargaming.wot.blitz/files/".length(), backupFilePath.length());
+        }
+        System.out.println("backupFileRelativePath: " + backupFileRelativePath);
+        try {
+            copySD(backupFilePath, getExternalCacheDir() + "/" + repoArray.get(currentRepo) + "/" + modID + "/" + backupFileRelativePath, false, modID);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+    // 拡張子を取り除く
     public static String getPrefix(String fileName) {
         if (fileName == null)
             return null;
@@ -438,14 +523,14 @@ public class ProcessActivity extends AppCompatActivity {
         return fileName;
     }
 
-    public void installData() {
+    // Modをインストール
+    public void installData(String modID) {
         handler.post(new Runnable() {
             public void run() {
                 progressBar.setIndeterminate(true);
             }
         });
-        File dataDir = new File(getExternalCacheDir() + "/Data");
-        delete(dataDir);
+        deleteSD(getExternalCacheDir() + "/Data");
         try {
             ZipFile zipFile = new ZipFile(getExternalCacheDir() + "/Data.zip");
             zipFile.extractAll(getExternalCacheDir().toString());
@@ -453,10 +538,30 @@ public class ProcessActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         try {
-            copySD(getExternalCacheDir() + "/Data", blitzPath);
+            copySD(getExternalCacheDir() + "/Data", blitzPath, true, modID);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        handler.post(new Runnable() {
+            public void run() {
+                progressBar.setIndeterminate(false);
+            }
+        });
+    }
+
+    // Modを削除
+    public void removeData(String modID) {
+        handler.post(new Runnable() {
+            public void run() {
+                progressBar.setIndeterminate(true);
+            }
+        });
+        try {
+            copySD(getExternalCacheDir() + "/" + repoArray.get(currentRepo) + "/" + modID + "/Data", blitzPath, false, modID);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        deleteSD(getExternalCacheDir() + "/" + repoArray.get(currentRepo) + "/" + modID + "/Data");
         handler.post(new Runnable() {
             public void run() {
                 progressBar.setIndeterminate(false);

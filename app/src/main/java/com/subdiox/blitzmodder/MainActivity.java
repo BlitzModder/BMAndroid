@@ -11,13 +11,11 @@ import android.content.DialogInterface;
 import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.provider.DocumentFile;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,7 +36,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -568,7 +565,7 @@ public class MainActivity extends AppCompatActivity {
 
     // read file and return its string data
     private String readFile(String FileName) {
-        File file = new File(getFilesDir(),FileName);
+        File file = new File(getExternalCacheDir(), FileName);
         StringBuilder text = new StringBuilder();
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));
@@ -587,7 +584,7 @@ public class MainActivity extends AppCompatActivity {
 
     // refresh mods list
     private void refreshModsList() {
-        download("https://github.com/" + repoArray.get(0) + "/BMRepository/raw/master/" + locale + ".plist", getFilesDir() + "/" + repoArray.get(0) + "_" + locale + ".plist");
+        download("https://github.com/" + repoArray.get(0) + "/BMRepository/raw/master/" + locale + ".plist", getExternalCacheDir() + "/" + repoArray.get(0) + "_" + locale + ".plist");
         while (!downloadFinished) {}
         if (connectionError) {
             alertDialogBuilder = new AlertDialog.Builder(this);
