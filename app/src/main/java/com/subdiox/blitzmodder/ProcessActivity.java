@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.support.v4.provider.DocumentFile;
@@ -14,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -36,6 +38,8 @@ import java.util.concurrent.ExecutionException;
 
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.core.ZipFile;
+
+import static android.os.Environment.getExternalStorageDirectory;
 
 public class ProcessActivity extends AppCompatActivity {
 
@@ -230,40 +234,208 @@ public class ProcessActivity extends AppCompatActivity {
         }
     }
 
-    public void copy(File sourceLocation, File targetLocation) throws IOException {
-        if (sourceLocation.isDirectory()) {
-            copyDirectory(sourceLocation, targetLocation);
-        } else {
-            copyFile(sourceLocation, targetLocation);
+    private void copySD(String sourcePath, String targetPath) throws IOException {
+        String internalPath = Environment.getExternalStorageDirectory().toString();
+        String externalPath = "External Path";
+
+        if (treeUri != null) {
+            externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
+            if (externalPath == null) {
+                System.out.println("externalPath is null");
+                return;
+            }
+        }
+        if (sourcePath.startsWith(internalPath) && targetPath.startsWith(internalPath)) {
+            File sourceFile = new File(sourcePath);
+            if (sourceFile.isDirectory()) {
+                copyDirectorySD(sourcePath, targetPath);
+            } else {
+                copyFileSD(sourcePath, targetPath);
+            }
+        } else if (sourcePath.startsWith(externalPath) || targetPath.startsWith(externalPath)) {
+            DocumentFile sourceFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
+            if (sourcePath.startsWith(internalPath)) {
+                sourceFile = DocumentFile.fromFile(new File(sourcePath));
+            } else if (sourcePath.startsWith(externalPath)) {
+                String sourceRelativePath = sourcePath.substring(externalPath.length() + 1, sourcePath.length());
+                String[] sourceArray = sourceRelativePath.split("/", -1);
+                for (String sourcePathSegment : sourceArray) {
+                    sourceFile = sourceFile.findFile(sourcePathSegment);
+                }
+            }
+            if (sourceFile.isDirectory()) {
+                copyDirectorySD(sourcePath, targetPath);
+            } else {
+                copyFileSD(sourcePath, targetPath);
+            }
         }
     }
 
-    private void copyDirectory(File source, File target) throws IOException {
-        if (!target.exists()) {
-            target.mkdir();
-        }
+    private void copyDirectorySD(String sourcePath, String targetPath) throws IOException {
+        String internalPath = Environment.getExternalStorageDirectory().toString();
+        String externalPath = "External Path";
 
-        for (String f : source.list()) {
-            copy(new File(source, f), new File(target, f));
+        if (treeUri != null) {
+            externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
+            if (externalPath == null) {
+                System.out.println("externalPath is null");
+                return;
+            }
+        }
+        if (sourcePath.startsWith(internalPath) && targetPath.startsWith(internalPath)) {
+            File sourceFile = new File(sourcePath);
+            File targetFile = new File(targetPath);
+            if (!targetFile.exists()) {
+                targetFile.mkdir();
+            }
+            for (String f : sourceFile.list()) {
+                copySD(new File(sourceFile, f).getAbsolutePath(), new File(targetFile, f).getAbsolutePath());
+            }
+        } else if (sourcePath.startsWith(externalPath) || targetPath.startsWith(externalPath)) {
+            DocumentFile sourceFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
+            DocumentFile targetFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
+            if (sourcePath.startsWith(internalPath)) {
+                sourceFile = DocumentFile.fromFile(new File(sourcePath));
+            } else if (sourcePath.startsWith(externalPath)) {
+                String sourceRelativePath = sourcePath.substring(externalPath.length() + 1, sourcePath.length());
+                String[] sourceArray = sourceRelativePath.split("/", -1);
+                for (String sourcePathSegment : sourceArray) {
+                    sourceFile = sourceFile.findFile(sourcePathSegment);
+                }
+            }
+            if (targetPath.startsWith(externalPath)) {
+                String targetRelativePath = targetPath.substring(externalPath.length() + 1, targetPath.length());
+                String[] targetArray = targetRelativePath.split("/", -1);
+                for (String targetPathSegment : targetArray) {
+                    DocumentFile tempTargetFile = targetFile.findFile(targetPathSegment);
+                    if (tempTargetFile != null) {
+                        targetFile = tempTargetFile;
+                    } else {
+                        targetFile.createDirectory(targetPathSegment);
+                    }
+                }
+            }
+            for (DocumentFile f : sourceFile.listFiles()) {
+                System.out.println(sourcePath + "/" + f.getName() + ", " + targetPath + "/" + f.getName());
+                copySD(sourcePath + "/" + f.getName(), targetPath + "/" + f.getName());
+            }
         }
     }
 
-    private void copyFile(File source, File target) throws IOException {
+    private void copyFileSD(String sourcePath, String targetPath) throws IOException {
+        String internalPath = Environment.getExternalStorageDirectory().toString();
+        String externalPath = "External Path";
+
+        if (treeUri != null) {
+            externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
+            if (externalPath == null) {
+                System.out.println("externalPath is null");
+                return;
+            }
+        }
+        
         InputStream in;
         OutputStream out;
-        try {
-            in = new FileInputStream(source);
-            out = new FileOutputStream(target);
-            byte[] buf = new byte[1024];
-            int length;
-            while ((length = in.read(buf)) > 0) {
-                out.write(buf, 0, length);
+        int DEFAULT_BUFFER_SIZE = 1024 * 4;
+        if (sourcePath.startsWith(internalPath) && targetPath.startsWith(internalPath)) {
+            File source = new File(sourcePath);
+            File target = new File(targetPath);
+            try {
+                in = new FileInputStream(source);
+                out = new FileOutputStream(target);
+                byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
+                int length;
+                while ((length = in.read(buf)) > 0) {
+                    out.write(buf, 0, length);
+                }
+                in.close();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            in.close();
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else if (sourcePath.startsWith(externalPath) || targetPath.startsWith(externalPath)) {
+            DocumentFile sourceFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
+            DocumentFile targetFile = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
+            String fileToCreate = "";
+            if (sourcePath.startsWith(internalPath)) {
+                sourceFile = DocumentFile.fromFile(new File(sourcePath));
+            } else if (sourcePath.startsWith(externalPath)) {
+                String sourceRelativePath = sourcePath.substring(externalPath.length() + 1, sourcePath.length());
+                String[] sourceArray = sourceRelativePath.split("/", -1);
+                for (String sourcePathSegment : sourceArray) {
+                    sourceFile = sourceFile.findFile(sourcePathSegment);
+                }
+            }
+            if (targetPath.startsWith(internalPath)) {
+                targetFile = DocumentFile.fromFile(new File(targetPath));
+            } else if (targetPath.startsWith(externalPath)) {
+                String targetRelativePath = targetPath.substring(externalPath.length() + 1, targetPath.length());
+                String[] targetArray = targetRelativePath.split("/", -1);
+                for (String targetPathSegment : targetArray) {
+                    DocumentFile tempTargetFile = targetFile.findFile(targetPathSegment);
+                    if (tempTargetFile != null) {
+                        targetFile = tempTargetFile;
+                    } else {
+                        fileToCreate = targetPathSegment;
+                    }
+                }
+            }
+            if (!sourceFile.exists()) {
+                Toast.makeText(getApplicationContext(), "sourceFile not found!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            in = getContentResolver().openInputStream(sourceFile.getUri());
+
+            if (fileToCreate.equals("")) {
+                out = getContentResolver().openOutputStream(targetFile.getUri());
+            } else {
+                String targetMimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(fileToCreate));
+                System.out.println("targetPrefix: " + getPrefix(fileToCreate));
+                System.out.println("targetMimeType: " + targetMimeType);
+                if (targetMimeType == null) {
+                    out = getContentResolver().openOutputStream(targetFile.createFile("", fileToCreate).getUri());
+                } else {
+                    out = getContentResolver().openOutputStream(targetFile.createFile(targetMimeType, getPrefix(fileToCreate)).getUri());
+                }
+
+            }
+
+            try {
+                byte[] buf = new byte[DEFAULT_BUFFER_SIZE];
+                int length;
+                while ((length = in.read(buf)) > 0) {
+                    out.write(buf, 0, length);
+                }
+                in.close();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Path format is incorrect!");
         }
+    }
+
+    // 元データをバックアップする
+    public void backupData(String backupFilePath) {
+        String internalPath = Environment.getExternalStorageDirectory().toString();
+        String externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
+        if (externalPath == null) {
+            System.out.println("externalPath is null");
+            return;
+        }
+        if (Environment.getExternalStorageDirectory().toString())
+        copySD(backupFilePath, )
+    }
+
+    public static String getPrefix(String fileName) {
+        if (fileName == null)
+            return null;
+        int point = fileName.lastIndexOf(".");
+        if (point != -1) {
+            return fileName.substring(0, point);
+        }
+        return fileName;
     }
 
     public void installData() {
@@ -280,9 +452,8 @@ public class ProcessActivity extends AppCompatActivity {
         } catch (ZipException e) {
             e.printStackTrace();
         }
-        File blitzData = new File(blitzPath);
         try {
-            copyDirectory(dataDir, blitzData);
+            copySD(getExternalCacheDir() + "/Data", blitzPath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -315,7 +486,7 @@ public class ProcessActivity extends AppCompatActivity {
         private Context context;
         private PowerManager.WakeLock mWakeLock;
 
-        public DownloadTask(Context context) {
+        private DownloadTask(Context context) {
             this.context = context;
         }
 
@@ -332,8 +503,7 @@ public class ProcessActivity extends AppCompatActivity {
                 // expect HTTP 200 OK, so we don't mistakenly save error report
                 // instead of the file
                 if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    return "Server returned HTTP " + connection.getResponseCode()
-                            + " " + connection.getResponseMessage();
+                    return "Server returned HTTP " + connection.getResponseCode() + " " + connection.getResponseMessage();
                 }
 
                 // this will be useful to display download percentage

@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static String[] getStorageDirectories() {
         // Final set of paths
-        final Set<String> rv = new HashSet<String>();
+        final Set<String> rv = new HashSet<>();
         // Primary physical SD-CARD (not emulated)
         final String rawExternalStorage = System.getenv("EXTERNAL_STORAGE");
         // All Secondary SD-CARDs (all exclude primary) separated by ":"
@@ -380,8 +380,6 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(DialogInterface dialog, int which) {
                         }
                     });
-            alertDialog = alertDialogBuilder.create();
-            alertDialog.show();
         } else {
             alertDialogBuilder.setTitle(getResources().getString(R.string.no_changes_title));
             alertDialogBuilder.setMessage(getResources().getString(R.string.no_changes_message));
@@ -391,8 +389,6 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(DialogInterface dialog, int which) {
                         }
                     });
-            alertDialog = alertDialogBuilder.create();
-            alertDialog.show();
         }
     }
 
