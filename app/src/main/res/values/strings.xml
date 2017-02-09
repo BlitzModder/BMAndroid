@@ -59,8 +59,19 @@
     <string name="title_activity_confirm">Confirmation</string>
 
     <string name="sdcard_permission_title">Grant access to SD card</string>
-    <string name="sdcard_permission_message">Please select SD card to allow BlitzModder to access it.</string>
-    <string name="sdcard_not_supported_kitkat">SD card is not supported on KitKat, because of OS restriction.\nPlease install Blitz on internal storage instead.</string>
+    <string name="sdcard_permission_message">Please select SD card to allow BlitzModder to access it.\n(Please don\'t select other than SD card root directory! Or BlitzModder won\'t work properly.)</string>
+    <string name="sdcard_not_supported_kitkat">SD card is not supported on KitKat, because of OS restriction.\nPlease reinstall Blitz on internal storage.</string>
     <string name="some_error_occurred">Some error occurred. Please contact developer.</string>
-    <string name="backup_lost">\nBackup data of this mod seems to be lost! Skipping &#8230;"</string>
+    <string name="notice">Notice</string>
+    <string name="sdcard_notice">Writing to SD card takes a very long time due to OS restriction.\nWe recommend that you reinstall Blitz on internal storage.\nYou can change this settings afterwards.</string>
+    <string name="connection_error_title">Error</string>
+    <string name="blitz_error_title">Error</string>
+    <string name="cancel">Cancel</string>
+    <string name="open_blitz">Open Blitz</string>
+    <string name="open_blitz_summary">You can open World of Tanks Blitz with this button.</string>
+    <string name="delete_blitz">Delete Blitz Data</string>
+    <string name="delete_blitz_summary">You can delete data of World of Tanks Blitz. After that, you need to open Blitz to initialize it.</string>
+    <string name="warning">Warning</string>
+    <string name="delete_blitz_message">Are you sure to delete the whole data of World of Tanks Blitz? This process cannot be undone.</string>
+    <string name="delete_finished">Deleting Blitz Data is finished. Please open World of Tanks Blitz to initialize it.</string>
 </resources>

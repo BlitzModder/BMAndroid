@@ -108,9 +108,19 @@ public class SubActivity extends AppCompatActivity {
         }
     }
 
+    private String removeHttp(String string) {
+        if (string.startsWith("http://")) {
+            return string.substring("http://".length(), string.length()).replaceAll("/",":");
+        } else if (string.startsWith("https://")) {
+            return string.substring("https://".length(), string.length()).replaceAll("/",":");
+        } else {
+            return string.replaceAll("/",":");
+        }
+    }
+
     public String getFullID(boolean b, int i, int j, int k) {
         if (b) { // with repo name
-            return repoArray.get(currentRepo) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+            return removeHttp(repoArray.get(currentRepo)) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         } else { // without repo name
             return getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         }

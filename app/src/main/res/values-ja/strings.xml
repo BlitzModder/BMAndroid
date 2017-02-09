@@ -33,9 +33,9 @@
     <string name="blitz_initial_check">Blitzを内部ストレージと外部SDカードのどちらにインストールしましたか？</string>
     <string name="blitz_not_initialized">World of Tanks Blitzはインストールされていますが、初期化されていません。アプリを開いて初回ダウンロードを行ってください。</string>
     <string name="blitz_not_installed">World of Tanks Blitzがインストールされていません。</string>
-    <string name="external">external</string>
+    <string name="external">SDカード</string>
     <string name="external_full">外部SDカード</string>
-    <string name="internal">internal</string>
+    <string name="internal">内部ストレージ</string>
     <string name="internal_full">内部ストレージ</string>
     <string name="main_menu_title">Modリスト</string>
     <string name="process_menu_title">実行中</string>
@@ -44,6 +44,19 @@
     <string name="connection_error_title">エラー</string>
     <string name="okay">OK</string>
     <string name="permission_required">BlitzModderが正常に動作するためには、BlitzModderにストレージの書き込み権限を与える必要があります。</string>
-    <string name="sdcard_permission_message">SDカードを選択してBlitzModderのアクセスを許可してください。</string>
-    <string name="sdcard_permission_title">SDカード (実験的)</string>
+    <string name="sdcard_permission_message">SDカードを選択してBlitzModderのアクセスを許可してください。\n(ここでSDカードのルートディレクトリ以外を選択しないでください！BlitzModderが正常に動作しなくなります。)</string>
+    <string name="sdcard_permission_title">SDカードのアクセス権限付与</string>
+    <string name="error">エラー</string>
+    <string name="notice">注意</string>
+    <string name="sdcard_not_supported_kitkat">KitkatではOSの制限によってSDカードに書き込めません。\nBlitzを本体ストレージに再インストールしてください。</string>
+    <string name="sdcard_notice">SDカードの場合、OSの制限により書き込みにとても長い時間がかかります。\nそのため、Blitzを内部ストレージに再インストールすることを推奨します。\nまた、この設定は後から変更できます。</string>
+    <string name="some_error_occurred">エラーが発生しました。開発者に報告してください。</string>
+    <string name="cancel">キャンセル</string>
+    <string name="delete_blitz">Blitzデータを削除</string>
+    <string name="delete_blitz_message">本当にWorld of Tanks Blitzの全データを削除してもよろしいですか？この操作は取り消すことができません。</string>
+    <string name="delete_blitz_summary">World of Tanks Blitzのデータを削除することができます。その後、Blitzを起動して初期化する必要があります。</string>
+    <string name="open_blitz">Blitzを開く</string>
+    <string name="open_blitz_summary">このボタンでWorld of Tanks Blitzを開くことができます。</string>
+    <string name="warning">警告</string>
+    <string name="delete_finished">Blitzデータの削除が完了しました。World of Tanks Blitzを開いて初期化してください。</string>
 </resources>

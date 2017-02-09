@@ -4,18 +4,21 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +39,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -45,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 import android.support.v4.content.ContextCompat;
@@ -69,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
     public static ArrayList<ArrayList<String>> modNameArray;
     public static ArrayList<ArrayList<ArrayList<String>>> modDetailArray;
     public static String locale;
-    public static boolean downloadFinished;
     public static AlertDialog.Builder alertDialogBuilder;
     public static AlertDialog alertDialog;
     public static AlertDialog sdcardAlertDialog;
@@ -81,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
     public static Uri treeUri;
     public static String treeUriString;
     public static String SDPath;
+    public static String downloadPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +105,13 @@ public class MainActivity extends AppCompatActivity {
         // get application variables
         app = (BMApplication)this.getApplication();
         app.init();
+
+        userSettings = UserSettings.getInstance(getApplicationContext());
+        if (!userSettings.repoArray.get(0).equals("http://subdiox.com/repo")) {
+            userSettings.repoArray.remove(0);
+            userSettings.repoArray.add("http://subdiox.com/repo");
+            userSettings.saveInstance(getApplicationContext());
+        }
 
         getUserSettings();
 
@@ -129,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 prepareAlertDialog();
                 alertDialog = alertDialogBuilder.create();
+                alertDialog.setCancelable(false);
                 alertDialog.show();
             }
         });
@@ -138,6 +151,27 @@ public class MainActivity extends AppCompatActivity {
         }
 
         checkBlitzExists();
+
+        if (connectionError) {
+            alertDialogBuilder = new AlertDialog.Builder(this);
+            alertDialogBuilder.setCancelable(false);
+            alertDialogBuilder.setTitle(getResources().getString(R.string.error));
+            alertDialogBuilder.setMessage(getResources().getString(R.string.connection_error_message));
+            alertDialogBuilder.setPositiveButton(
+                    getResources().getString(R.string.recheck),
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            refreshModsList();
+                        }
+                    });
+            handler.post(new Runnable() {
+                public void run() {
+                    alertDialog = alertDialogBuilder.create();
+                    alertDialog.setCancelable(false);
+                    alertDialog.show();
+                }
+            });
+        }
     }
 
     private static final Pattern DIR_SEPARATOR = Pattern.compile("/");
@@ -186,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
         }
         // Add all secondary storages
         if(!TextUtils.isEmpty(rawSecondaryStoragesStr)) {
-            // All Secondary SD-CARDs splited into array
+            // All Secondary SD-CARDs splitted into array
             final String[] rawSecondaryStorages = rawSecondaryStoragesStr.split(File.pathSeparator);
             Collections.addAll(rv, rawSecondaryStorages);
         }
@@ -201,8 +235,8 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                 alertDialogBuilder = new AlertDialog.Builder(this);
-                alertDialogBuilder.setTitle(getResources().getString(R.string.confirm_title));
-                alertDialogBuilder.setMessage(getResources().getString(R.string.permission_required));
+                alertDialogBuilder.setTitle(getString(R.string.confirm_title));
+                alertDialogBuilder.setMessage(getString(R.string.permission_required));
                 alertDialogBuilder.setPositiveButton(
                         getResources().getString(R.string.recheck),
                         new DialogInterface.OnClickListener() {
@@ -211,6 +245,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                 alertDialog = alertDialogBuilder.create();
+                alertDialog.setCancelable(false);
                 alertDialog.show();
             }
         }
@@ -220,8 +255,11 @@ public class MainActivity extends AppCompatActivity {
     @TargetApi(21)
     public void requestSdcardAccessPermission() {
         AlertDialog.Builder sdcardAlertDialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater factory = LayoutInflater.from(this);
+        final View view = factory.inflate(R.layout.dialog_sdcard, null);
         sdcardAlertDialogBuilder.setTitle(getResources().getString(R.string.sdcard_permission_title));
         sdcardAlertDialogBuilder.setMessage(getResources().getString(R.string.sdcard_permission_message));
+        sdcardAlertDialogBuilder.setView(view);
         sdcardAlertDialogBuilder.setPositiveButton(
                 getResources().getString(R.string.okay),
                 new DialogInterface.OnClickListener() {
@@ -231,6 +269,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
         sdcardAlertDialog = sdcardAlertDialogBuilder.create();
+        sdcardAlertDialog.setCancelable(false);
         sdcardAlertDialog.show();
     }
 
@@ -281,6 +320,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                 alertDialog = alertDialogBuilder.create();
+                alertDialog.setCancelable(false);
                 alertDialog.show();
             }
             saveUserSettings();
@@ -435,10 +475,28 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getString(R.string.external),
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
-                            blitzExternalCheck();
+                            alertDialog.dismiss();
+                            alertDialogBuilder.setTitle(getResources().getString(R.string.notice));
+                            alertDialogBuilder.setMessage(getResources().getString(R.string.sdcard_notice));
+                            alertDialogBuilder.setPositiveButton(
+                                    getResources().getString(R.string.okay),
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            blitzExternalCheck();
+                                        }
+                                    });
+                            alertDialogBuilder.setNegativeButton(
+                                    getResources().getString(R.string.cancel),
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            checkBlitzExists();
+                                        }
+                                    });
+                            alertDialogBuilder.create().show();
                         }
                     });
             alertDialog = alertDialogBuilder.create();
+            alertDialog.setCancelable(false);
             alertDialog.show();
         } else if (blitzPath.equals("error")) {
             alertDialogBuilder = new AlertDialog.Builder(this);
@@ -453,6 +511,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
             alertDialog = alertDialogBuilder.create();
+            alertDialog.setCancelable(false);
             alertDialog.show();
         } else {
             if (internal) {
@@ -514,7 +573,9 @@ public class MainActivity extends AppCompatActivity {
                             getBlitzPath();
                         }
                     });
-            internalAlertDialog.create().show();
+            AlertDialog internalAlert = internalAlertDialog.create();
+            internalAlert.setCancelable(false);
+            internalAlert.show();
         } else {
             String[] storages = getStorageDirectories();
             SDPath = storages[1];
@@ -522,50 +583,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // download from url and save as a file
-    public void download(final String urlString, final String path) {
-        connectionError = false;
-        downloadFinished = false;
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                HttpURLConnection con = null;
-                try {
-                    final URL url = new URL(urlString);
-                    con = (HttpURLConnection) url.openConnection();
-                    con.connect();
-                    final int status = con.getResponseCode();
-                    if (status == HttpURLConnection.HTTP_OK) {
-                        final InputStream input = con.getInputStream();
-                        final DataInputStream dataInput = new DataInputStream(input);
-                        final FileOutputStream fileOutput = new FileOutputStream(path);
-                        final DataOutputStream dataOut = new DataOutputStream(fileOutput);
-                        final byte[] buffer = new byte[4096];
-                        int readByte = 0;
-                        while((readByte = dataInput.read(buffer)) != -1) {
-                            dataOut.write(buffer, 0, readByte);
-                        }
-                        dataInput.close();
-                        fileOutput.close();
-                        dataInput.close();
-                        input.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    connectionError = true;
-                } finally {
-                    if (con != null) {
-                        con.disconnect();
-                    }
-                    downloadFinished = true;
-                }
-            }
-        }).start();
-    }
-
     // read file and return its string data
     private String readFile(String FileName) {
-        File file = new File(getExternalCacheDir(), FileName);
+        File file = new File(FileName);
         StringBuilder text = new StringBuilder();
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));
@@ -582,10 +602,34 @@ public class MainActivity extends AppCompatActivity {
         return text.toString();
     }
 
+    private String removeHttp(String string) {
+        if (string.startsWith("http://")) {
+            return string.substring("http://".length(), string.length()).replaceAll("/",":");
+        } else if (string.startsWith("https://")) {
+            return string.substring("https://".length(), string.length()).replaceAll("/",":");
+        } else {
+            return string.replaceAll("/",":");
+        }
+    }
+
     // refresh mods list
     private void refreshModsList() {
-        download("https://github.com/" + repoArray.get(0) + "/BMRepository/raw/master/" + locale + ".plist", getExternalCacheDir() + "/" + repoArray.get(0) + "_" + locale + ".plist");
-        while (!downloadFinished) {}
+        String plistPath = getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/plist/" + locale + ".plist";
+        File file = new File(plistPath);
+        if (!file.getParentFile().exists()) {
+            boolean result = file.getParentFile().mkdirs();
+            if (result) {
+                System.out.println("Succeeded in creating directory!");
+            } else {
+                Toast.makeText(this, "Failed to create directory.", Toast.LENGTH_LONG).show();
+            }
+        }
+        try {
+            downloadPath = getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/plist/" + locale + ".plist";
+            new DownloadTask(this).execute(repoArray.get(currentRepo) + "/plist/" + locale + ".plist").get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
         if (connectionError) {
             alertDialogBuilder = new AlertDialog.Builder(this);
             alertDialogBuilder.setCancelable(false);
@@ -601,48 +645,59 @@ public class MainActivity extends AppCompatActivity {
             handler.post(new Runnable() {
                 public void run() {
                     alertDialog = alertDialogBuilder.create();
+                    alertDialog.setCancelable(false);
                     alertDialog.show();
                 }
             });
+            modCategoryArray = new ArrayList<>();
+            modNameArray = new ArrayList<>();
+            modDetailArray = new ArrayList<>();
+            return;
         }
         PListXMLParser parser = new PListXMLParser();
         PListXMLHandler handler = new PListXMLHandler();
         parser.setHandler(handler);
         try {
-            parser.parse(readFile(repoArray.get(0) + "_" + locale + ".plist"));
-            PList actualPList = ((PListXMLHandler) parser.getHandler()).getPlist();
-            LinkedHashMap<String,PListObject> modCategoryPlist = ((Dict)actualPList.getRootElement()).getConfigMap();
-            modCategoryArray = new ArrayList<>(modCategoryPlist.keySet());
-            modNameArray = new ArrayList<>();
-            modDetailArray = new ArrayList<>();
-            for(int i = 0; i < modCategoryArray.size(); i++) {
-                LinkedHashMap<String, PListObject> modNamePlist = ((Dict) modCategoryPlist.get(modCategoryArray.get(i))).getConfigMap();
-                modNameArray.add(new ArrayList<>(modNamePlist.keySet()));
-                ArrayList<ArrayList<String>> tempArray = new ArrayList<>();
-                for (int j = 0; j < modNameArray.get(i).size(); j++) {
-                    LinkedHashMap<String, PListObject> modDetailPlist = ((Dict) modNamePlist.get(modNameArray.get(i).get(j))).getConfigMap();
-                    ArrayList<String> keysArray = new ArrayList<>(modDetailPlist.keySet());
-                    ArrayList<String> valuesArray = new ArrayList<>();
-                    for (String key : keysArray) {
-                        valuesArray.add(((com.longevitysoft.android.xml.plist.domain.String)modDetailPlist.get(key)).getValue());
-                    }
-                    int current = 0;
-                    int removed = 0;
-                    while (current < valuesArray.size()) {
-                        if (!checkValidate(valuesArray.get(current))) {
-                            keysArray.remove(current - removed);
-                            removed += 1;
+            if (new File(plistPath).exists()) {
+                parser.parse(readFile(plistPath));
+                PList actualPList = ((PListXMLHandler) parser.getHandler()).getPlist();
+                LinkedHashMap<String, PListObject> modCategoryPlist = ((Dict) actualPList.getRootElement()).getConfigMap();
+                modCategoryArray = new ArrayList<>(modCategoryPlist.keySet());
+                modNameArray = new ArrayList<>();
+                modDetailArray = new ArrayList<>();
+                for (int i = 0; i < modCategoryArray.size(); i++) {
+                    LinkedHashMap<String, PListObject> modNamePlist = ((Dict) modCategoryPlist.get(modCategoryArray.get(i))).getConfigMap();
+                    modNameArray.add(new ArrayList<>(modNamePlist.keySet()));
+                    ArrayList<ArrayList<String>> tempArray = new ArrayList<>();
+                    for (int j = 0; j < modNameArray.get(i).size(); j++) {
+                        LinkedHashMap<String, PListObject> modDetailPlist = ((Dict) modNamePlist.get(modNameArray.get(i).get(j))).getConfigMap();
+                        ArrayList<String> keysArray = new ArrayList<>(modDetailPlist.keySet());
+                        ArrayList<String> valuesArray = new ArrayList<>();
+                        for (String key : keysArray) {
+                            valuesArray.add(((com.longevitysoft.android.xml.plist.domain.String) modDetailPlist.get(key)).getValue());
                         }
-                        current += 1;
+                        int current = 0;
+                        int removed = 0;
+                        while (current < valuesArray.size()) {
+                            if (!checkValidate(valuesArray.get(current))) {
+                                keysArray.remove(current - removed);
+                                removed += 1;
+                            }
+                            current += 1;
+                        }
+                        if (keysArray.size() == 0) {
+                            modNameArray.get(i).remove(j);
+                            j--;
+                        } else {
+                            tempArray.add(keysArray);
+                        }
                     }
-                    if (keysArray.size() == 0) {
-                        modNameArray.get(i).remove(j);
-                        j--;
-                    } else {
-                        tempArray.add(keysArray);
-                    }
+                    modDetailArray.add(tempArray);
                 }
-                modDetailArray.add(tempArray);
+            } else {
+                modCategoryArray = new ArrayList<>();
+                modNameArray = new ArrayList<>();
+                modDetailArray = new ArrayList<>();
             }
         } catch (IllegalStateException e) {
             e.printStackTrace();
@@ -667,12 +722,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public String getBlitzVersion() {
+        String resourcesPath = blitzPath + "/version/resources.txt";
         String versionName;
-        try {
-            versionName = getPackageManager().getPackageInfo("net.wargaming.wot.blitz", 0).versionName;
-        } catch (PackageManager.NameNotFoundException e) {
+        if (new File(resourcesPath).exists()) {
+            String resources = readFile(resourcesPath);
+            versionName = resources.split("\\n")[1];
+        } else {
             versionName = "0.0.0";
         }
+        // WGの3.6.0ミスリリースへの対策
+        if (versionName.equals("3.6.0")) {
+            versionName = "3.5.3";
+        }
+        System.out.println("Blitz version: " + versionName);
         String[] array = versionName.split("\\.");
         return array[0] + "." + array[1] + "." + array[2];
     }
@@ -706,7 +768,7 @@ public class MainActivity extends AppCompatActivity {
 
     public String getFullID(boolean b, int i, int j, int k) {
         if (b) { // with repo name
-            return repoArray.get(currentRepo) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+            return removeHttp(repoArray.get(currentRepo)) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         } else { // without repo name
             return getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         }
@@ -764,6 +826,105 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             });
+        }
+    }
+
+    public class DownloadTask extends AsyncTask<String, Integer, String> {
+
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+
+        private DownloadTask(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        protected String doInBackground(String... sUrl) {
+            InputStream input = null;
+            OutputStream output = null;
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(sUrl[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                int statusCode = connection.getResponseCode();
+                // check 20x
+                if (statusCode != HttpURLConnection.HTTP_OK
+                        && statusCode != HttpURLConnection.HTTP_CREATED) {
+                    // check 30x
+                    if (statusCode == HttpURLConnection.HTTP_MOVED_TEMP
+                            || statusCode == HttpURLConnection.HTTP_MOVED_PERM
+                            || statusCode == HttpURLConnection.HTTP_SEE_OTHER) {
+
+                        String newUrlString = connection.getHeaderField("Location");
+                        connection = (HttpURLConnection) new URL(newUrlString).openConnection();
+                    } else {
+                        // 20x or 30x系でないので例外を送出
+                        throw new IOException("Response code is " + Integer.toString(statusCode) + " " + connection.getResponseMessage());
+                    }
+                }
+
+                // this will be useful to display download percentage
+                // might be -1: server did not report the length
+                int fileLength = connection.getContentLength();
+
+                // download the file
+                input = connection.getInputStream();
+                output = new FileOutputStream(downloadPath);
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    // publishing the progress....
+                    if (fileLength > 0) // only if total length is known
+                        publishProgress((int) (total * 100 / fileLength));
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                return e.toString();
+            } finally {
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    getClass().getName());
+            mWakeLock.acquire();
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+            // if we get here, length is known, now set indeterminate to false
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
         }
     }
 }

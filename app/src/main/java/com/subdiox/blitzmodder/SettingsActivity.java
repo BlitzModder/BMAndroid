@@ -2,21 +2,29 @@ package com.subdiox.blitzmodder;
 
 
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.PreferenceScreen;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import java.util.List;
 
 public class SettingsActivity extends AppCompatPreferenceActivity {
+
+    public static String blitzPath;
+
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
@@ -114,7 +122,51 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             } else {
                 disk.setValueIndex(1);
             }
+
+            PreferenceScreen deleteBlitz = (PreferenceScreen) findPreference("delete_blitz");
+            deleteBlitz.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+                    alertDialogBuilder.setTitle(getResources().getString(R.string.warning));
+                    alertDialogBuilder.setMessage(getActivity().getApplicationContext().getString(R.string.delete_blitz_message));
+                    alertDialogBuilder.setPositiveButton(
+                            getResources().getString(R.string.okay),
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    ProcessActivity processActivity = new ProcessActivity();
+                                    getUserSettings();
+                                    ProgressDialog progressDialog = new ProgressDialog(getActivity());
+                                    progressDialog.setMessage("Deleting Blitz Data...");
+                                    progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+                                    progressDialog.setCancelable(false);
+                                    progressDialog.show();
+                                    processActivity.deleteSD(blitzPath);
+                                    progressDialog.hide();
+                                    Toast.makeText(getActivity(),getActivity().getString(R.string.delete_finished),Toast.LENGTH_LONG).show();
+
+                                }
+                            });
+                    alertDialogBuilder.setNegativeButton(
+                            getResources().getString(R.string.cancel),
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                }
+                            });
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.setCancelable(false);
+                    alertDialog.show();
+                    return true;
+                }
+            });
+
             bindPreferenceSummaryToValue(findPreference("disk"));
+        }
+
+        public void getUserSettings() {
+            // get preference variables
+            UserSettings userSettings = UserSettings.getInstance(getActivity().getApplicationContext());
+            blitzPath = userSettings.blitzPath;
         }
 
         @Override

@@ -41,7 +41,7 @@ public class UserSettings {
     public static UserSettings getDefaultInstance(){
         UserSettings instance = new UserSettings();
         instance.repoArray = new ArrayList<String>();
-        instance.repoArray.add("BlitzModder");
+        instance.repoArray.add("http://subdiox.com/repo");
         instance.currentRepo = 0;
         instance.buttonArray = new ArrayList<String>();
         instance.installedArray = new ArrayList<String>();
