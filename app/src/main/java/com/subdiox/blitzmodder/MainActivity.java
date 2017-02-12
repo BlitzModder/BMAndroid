@@ -118,6 +118,10 @@ public class MainActivity extends AppCompatActivity {
         // initialize sectionedRecyclerViewAdapter
         sectionAdapter = new SectionedRecyclerViewAdapter();
 
+        if (Build.VERSION.SDK_INT >= 23) {
+            checkPermission();
+        }
+
         // load mods list
         refreshModsList();
 
@@ -145,10 +149,6 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.show();
             }
         });
-
-        if (Build.VERSION.SDK_INT >= 23) {
-            checkPermission();
-        }
 
         checkBlitzExists();
 
@@ -726,7 +726,12 @@ public class MainActivity extends AppCompatActivity {
         String versionName;
         if (new File(resourcesPath).exists()) {
             String resources = readFile(resourcesPath);
-            versionName = resources.split("\\n")[1];
+            String[] versionArray = resources.split("\\n");
+            if (versionArray.length == 2) {
+                versionName = versionArray[1];
+            } else {
+                versionName = "0.0.0";
+            }
         } else {
             versionName = "0.0.0";
         }
