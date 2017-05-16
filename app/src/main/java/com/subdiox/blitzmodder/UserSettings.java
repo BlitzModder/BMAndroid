@@ -13,6 +13,7 @@ import android.text.TextUtils;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class UserSettings {
     public ArrayList<String> repoArray;
@@ -22,6 +23,9 @@ public class UserSettings {
     public String blitzPath;
     public boolean internal;
     public String treeUriString;
+    public String locale;
+    public ArrayList<String> repoNameArray;
+    public ArrayList<String> repoVersionArray;
 
     private static final String USER_SETTING_PREF_KEY="USER_SETTING";
 
@@ -40,14 +44,19 @@ public class UserSettings {
 
     public static UserSettings getDefaultInstance(){
         UserSettings instance = new UserSettings();
-        instance.repoArray = new ArrayList<String>();
+        instance.repoArray = new ArrayList<>();
         instance.repoArray.add("http://subdiox.com/repo");
         instance.currentRepo = 0;
-        instance.buttonArray = new ArrayList<String>();
-        instance.installedArray = new ArrayList<String>();
+        instance.buttonArray = new ArrayList<>();
+        instance.installedArray = new ArrayList<>();
         instance.blitzPath = "";
         instance.internal = true;
         instance.treeUriString = "";
+        instance.locale = "";
+        instance.repoNameArray = new ArrayList<>();
+        instance.repoNameArray.add("BlitzModder");
+        instance.repoVersionArray = new ArrayList<>();
+        instance.repoVersionArray.add("0.0.0");
         return instance;
     }
 

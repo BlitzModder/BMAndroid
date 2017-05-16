@@ -9,30 +9,66 @@
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:theme="@style/AppTheme.AppBarOverlay"
+        android:layout_height="55dp">
 
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/toolbar"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            android:layout_height="match_parent">
+
+            <Button
+                android:id="@+id/settings_button"
+                android:layout_weight="1"
+                style="@android:style/Widget.DeviceDefault.Button.Borderless"
+                android:background="@drawable/settings"
+                android:elevation="0dp"
+                android:layout_centerHorizontal="false"
+                android:layout_centerVertical="true"
+                android:layout_margin="10dp"
+                android:layout_width="35dp"
+                android:layout_height="35dp" />
+
+            <TextView
+                android:text="BlitzModder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:id="@+id/textview_repo_name"
+                android:paddingBottom="3dp"
+                android:textColor="@android:color/white" />
+
+            <Button
+                android:id="@+id/apply_button"
+                android:background="@drawable/play"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_alignBaseline="@+id/settings_button"
+                android:layout_alignBottom="@+id/settings_button"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
+                android:layout_margin="10dp"
+                android:layout_centerVertical="false"
+                android:layout_centerHorizontal="false"
+                android:layout_centerInParent="false" />
+
+            <TextView
+                android:text="@string/mods_list"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="24sp"
+                android:paddingBottom="15dp"
+                android:id="@+id/textview_mod_list"
+                android:textColor="@android:color/white"
+                android:layout_centerVertical="true"
+                android:layout_centerHorizontal="true" />
+        </RelativeLayout>
 
     </android.support.design.widget.AppBarLayout>
 
-    <Button
+    <android.support.v7.widget.RecyclerView android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/applyButton"
-        app:layout_anchor="@+id/include"
-        app:layout_anchorGravity="bottom|right"
-        android:layout_gravity="top|left"
-        android:textAllCaps="false"
-        android:text="@string/action_apply" />
-
-    <include layout="@layout/content_main"
-        android:id="@+id/include"
-        android:layout_height="438dp" />
+        android:layout_marginTop="55dp"
+        android:id="@+id/recyclerView" />
 
 </android.support.design.widget.CoordinatorLayout>

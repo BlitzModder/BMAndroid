@@ -1,30 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BlitzModder</string>
-    <string name="title_activity_sub">SubActivity</string>
     <string name="action_settings">設定</string>
     <string name="action_apply">適用</string>
     <string name="not_installed">未インストール</string>
     <string name="installed">インストール済</string>
-    <string name="pref_description_send_email">問題を見つけた場合や、新機能の提案をする場合は、気軽にメールを送ってください。</string>
-    <string name="pref_description_twitter">Twitterで開発者をフォローしてメッセージを送ることができます。</string>
-    <string name="pref_description_website">BlitzModderで何か困ったことがありましたら、BlitzModderの使い方を参照してください。</string>
-    <string name="pref_header_contact">お問い合わせ</string>
-    <string name="pref_header_general">一般</string>
-    <string name="pref_title_disk">Blitzの保存ディスク</string>
-    <string name="pref_title_send_email">開発者にメールを送る</string>
-    <string name="pref_title_twitter">Twitterで開発者をフォロー</string>
-    <string name="pref_title_website">BlitzModderのホームページ</string>
-    <string name="title_activity_confirm">確認</string>
     <string name="title_activity_settings">設定</string>
     <string name="remove">[削除]</string>
     <string name="install">[インストール]</string>
     <string name="confirm_title">確認</string>
     <string name="confirm_message">これらの変更を適用してもよろしいですか？</string>
-    <string-array name="pref_list_title_disk">
-        <item>内部ストレージ</item>
-        <item>外部SDカード</item>
-    </string-array>
     <string name="no_changes_title">注意</string>
     <string name="no_changes_message">変更はありません。</string>
     <string name="back_button_title">Modリストに戻る</string>
@@ -48,7 +33,7 @@
     <string name="sdcard_permission_title">SDカードのアクセス権限付与</string>
     <string name="error">エラー</string>
     <string name="notice">注意</string>
-    <string name="sdcard_not_supported_kitkat">KitkatではOSの制限によってSDカードに書き込めません。\nBlitzを本体ストレージに再インストールしてください。</string>
+    <string name="sdcard_not_supported_kitkat">Android OS 4.4 KitKatでは、SDカードへの書き込みが制限されています。SDカードが使えない場合は、Blitzを本体ストレージにインストールし直してください。</string>
     <string name="sdcard_notice">SDカードの場合、OSの制限により書き込みにとても長い時間がかかります。\nそのため、Blitzを内部ストレージに再インストールすることを推奨します。\nまた、この設定は後から変更できます。</string>
     <string name="some_error_occurred">エラーが発生しました。開発者に報告してください。</string>
     <string name="cancel">キャンセル</string>
@@ -59,4 +44,35 @@
     <string name="open_blitz_summary">このボタンでWorld of Tanks Blitzを開くことができます。</string>
     <string name="warning">警告</string>
     <string name="delete_finished">Blitzデータの削除が完了しました。World of Tanks Blitzを開いて初期化してください。</string>
+    <string name="add_repository">リポジトリを追加</string>
+    <string name="bug_report">バグ報告 / 機能追加</string>
+    <string name="bug_report_detail">どんなフィードバックや質問でも歓迎です。</string>
+    <string name="confirm_reset_storage">ストレージの設定を変更してもよろしいですか？</string>
+    <string name="contact">お問い合わせ</string>
+    <string name="delete_repository">このリポジトリを削除してもよろしいですか？</string>
+    <string name="donate">開発者に寄付</string>
+    <string name="donate_detail">アプリを気に入ったら、寄付していただけると幸いです。</string>
+    <string name="english">英語</string>
+    <string name="invalid_repository">このリポジトリは無効です。リポジトリの管理者に連絡してください。</string>
+    <string name="japanese">日本語</string>
+    <string name="mods_list">Modリスト ▼</string>
+    <string name="repository">リポジトリ</string>
+    <string name="repository_settings">リポジトリの設定</string>
+    <string name="repository_settings_detail">Modリストをダウンロードするリポジトリを管理できます。</string>
+    <string name="reset_all_settings">全設定をリセット</string>
+    <string name="reset_all_settings_detail">BlitzModderの調子がおかしいときはここをタップ</string>
+    <string name="reset_all_settings_message">BlitzModderの全設定をリセットしてもよろしいですか？この操作は取り消すことができません。</string>
+    <string name="reset_installation">インストール情報をリセット</string>
+    <string name="reset_installation_detail">Blitzを再インストールした後はここをタップ</string>
+    <string name="reset_installation_message">インストール情報をリセットしてもよろしいですか？この操作は取り消すことができません。</string>
+    <string name="reset_internal_message">ストレージ設定が消去されました。Blitzのインストール先を再度指定する必要があります。</string>
+    <string name="russian">ロシア語</string>
+    <string name="select_repository">リポジトリを選択</string>
+    <string name="storage">ストレージ</string>
+    <string name="storage_title">Blitzのインストール先ストレージ</string>
+    <string name="trouble_shooting">困ったとき</string>
+    <string name="website">ホームページ</string>
+    <string name="website_detail">BlitzModderの使い方を参照するにはここをタップ</string>
+    <string name="doInstall">インストールする</string>
+    <string name="language">言語設定</string>
 </resources>

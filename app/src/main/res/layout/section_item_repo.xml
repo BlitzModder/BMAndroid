@@ -17,27 +17,15 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true">
-
-        <TextView
-            android:text="Text Text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/installedText"
-            android:textSize="12sp"
-            android:textColor="@color/colorPrimary"
-            android:layout_below="@+id/modDetail"
-            android:layout_alignLeft="@+id/modDetail"
-            android:layout_alignStart="@+id/modDetail" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="24dp"
             tools:text="Item test text"
-            android:id="@+id/modDetail"
+            android:id="@+id/repoName"
             android:textSize="16sp"
             android:textColor="@color/black"
             android:layout_marginStart="24dp"
@@ -45,15 +33,27 @@
             android:layout_alignParentStart="true"
             android:layout_marginTop="5dp" />
 
-        <CheckBox
-            android:id="@+id/installCheckBox"
+        <TextView
+            android:text="Text Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
+            android:id="@+id/repoURL"
+            android:textSize="12sp"
+            android:textColor="@color/colorPrimary"
+            android:layout_below="@+id/repoName"
+            android:layout_alignLeft="@+id/repoName"
+            android:layout_alignStart="@+id/repoName" />
+
+        <Button
+            android:layout_alignParentTop="true"
             android:layout_alignParentRight="true"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="10dp"
-            android:layout_marginRight="10dp" />
+            android:layout_alignParentEnd="true"
+            android:id="@+id/deleteButton"
+            style="@android:style/Widget.DeviceDefault.Button.Borderless"
+            android:background="@drawable/trash"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp" />
     </RelativeLayout>
 
 </RelativeLayout>

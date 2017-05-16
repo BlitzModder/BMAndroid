@@ -1,6 +1,7 @@
 package com.subdiox.blitzmodder;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -10,6 +11,7 @@ import android.os.PowerManager;
 import android.support.v4.provider.DocumentFile;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.MimeTypeMap;
@@ -38,6 +40,7 @@ public class ProcessActivity extends AppCompatActivity {
     public static BMApplication app;
     public static UserSettings userSettings;
     public static ArrayList<String> repoArray;
+    public static ArrayList<String> repoNameArray;
     public static int currentRepo;
     public static ArrayList<String> buttonArray;
     public static ArrayList<String> installedArray;
@@ -49,7 +52,6 @@ public class ProcessActivity extends AppCompatActivity {
     public static String treeUriString;
     public static Uri treeUri;
     public TextView logView;
-    public ScrollView scrollView;
     public ProgressBar progressBar;
     public Button backButton;
     public Handler handler;
@@ -71,21 +73,17 @@ public class ProcessActivity extends AppCompatActivity {
         backButton.setVisibility(View.INVISIBLE);
 
         // initialize scroll/log view
-        scrollView = (ScrollView)findViewById(R.id.scrollView);
         logView = (TextView)findViewById(R.id.logView);
         logView.setText("");
-
-        scrollView.post(new Runnable() {
-            public void run() {
-                scrollView.scrollTo(0, scrollView.getBottom());
-            }
-        });
+        logView.setMovementMethod(new ScrollingMovementMethod());
 
         // get application variables
         app = (BMApplication)this.getApplication();
 
         // initialize progress bar
         progressBar = (ProgressBar)findViewById(R.id.progressBar);
+        progressBar.getProgressDrawable().setColorFilter(Color.CYAN, android.graphics.PorterDuff.Mode.SRC_IN);
+        progressBar.getIndeterminateDrawable().setColorFilter(Color.CYAN, android.graphics.PorterDuff.Mode.SRC_IN);
 
         modCategoryArray = app.modCategoryArray;
         modNameArray = app.modNameArray;
@@ -114,6 +112,7 @@ public class ProcessActivity extends AppCompatActivity {
     public void getUserSettings() {
         userSettings = UserSettings.getInstance(getApplicationContext());
         repoArray = userSettings.repoArray;
+        repoNameArray = userSettings.repoNameArray;
         currentRepo = userSettings.currentRepo;
         buttonArray = userSettings.buttonArray;
         installedArray = userSettings.installedArray;
@@ -125,6 +124,7 @@ public class ProcessActivity extends AppCompatActivity {
     // save preference variables
     public void saveUserSettings() {
         userSettings.repoArray = repoArray;
+        userSettings.repoNameArray = repoNameArray;
         userSettings.currentRepo = currentRepo;
         userSettings.buttonArray = buttonArray;
         userSettings.installedArray = installedArray;
@@ -150,18 +150,18 @@ public class ProcessActivity extends AppCompatActivity {
         for (int i = 0; i < modCategoryArray.size(); i++) {
             for (int j = 0; j < modNameArray.get(i).size(); j++) {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
-                    if (!buttonArray.contains(getFullID(true,i,j,k)) && installedArray.contains(getFullID(true,i,j,k))) {
-                        log("Downloading removal data of " + getFullID(false,i,j,k) + " ...");
+                    if (!buttonArray.contains(getFullID(true, i, j, k)) && installedArray.contains(getFullID(true, i, j, k))) {
+                        log("Downloading removal data of " + getFullID(false, i, j, k) + " ...");
                         try {
                             new DownloadTask(this).execute(repoArray.get(currentRepo) + "/remove/" + getFullID(false, i, j, k) + ".zip").get();
                         } catch (ExecutionException | InterruptedException e) {
                             e.printStackTrace();
                         }
                         log("Done.\n");
-                        log("Removing " + getFullID(false,i,j,k) + " ...");
-                        installData(getFullID(false,i,j,k));
+                        log("Removing " + getFullID(false, i, j, k) + " ...");
+                        installData(getFullID(false, i, j, k));
                         getUserSettings();
-                        installedArray.remove(getFullID(true,i,j,k));
+                        installedArray.remove(getFullID(true, i, j, k));
                         saveUserSettings();
                         log("Done.\n");
                     }
@@ -171,18 +171,18 @@ public class ProcessActivity extends AppCompatActivity {
         for (int i = 0; i < modCategoryArray.size(); i++) {
             for (int j = 0; j < modNameArray.get(i).size(); j++) {
                 for (int k = 0; k < modDetailArray.get(i).get(j).size(); k++) {
-                    if (buttonArray.contains(getFullID(true,i,j,k)) && !installedArray.contains(getFullID(true,i,j,k))) {
-                        log("Downloading installation data of " + getFullID(false,i,j,k) + " ...");
+                    if (buttonArray.contains(getFullID(true, i, j, k)) && !installedArray.contains(getFullID(true, i, j, k))) {
+                        log("Downloading installation data of " + getFullID(false, i, j, k) + " ...");
                         try {
                             new DownloadTask(this).execute(repoArray.get(currentRepo) + "/install/" + getFullID(false, i, j, k) + ".zip").get();
                         } catch (ExecutionException | InterruptedException e) {
                             e.printStackTrace();
                         }
                         log("Done.\n");
-                        log("Installing " + getFullID(false,i,j,k) + " ...");
-                        installData(getFullID(false,i,j,k));
+                        log("Installing " + getFullID(false, i, j, k) + " ...");
+                        installData(getFullID(false, i, j, k));
                         getUserSettings();
-                        installedArray.add(getFullID(true,i,j,k));
+                        installedArray.add(getFullID(true, i, j, k));
                         saveUserSettings();
                         log("Done.\n");
                     }
@@ -197,20 +197,17 @@ public class ProcessActivity extends AppCompatActivity {
         });
     }
 
-    private String removeHttp(String string) {
-        if (string.startsWith("http://")) {
-            return string.substring("http://".length(), string.length()).replaceAll("/",":");
-        } else if (string.startsWith("https://")) {
-            return string.substring("https://".length(), string.length()).replaceAll("/",":");
-        } else {
-            return string.replaceAll("/",":");
-        }
-    }
-
     public void log(final String str) {
         handler.post(new Runnable() {
             public void run() {
+                logView = (TextView)findViewById(R.id.logView);
                 logView.append(str);
+                final int scrollAmount = logView.getLayout().getLineTop(logView.getLineCount()) - logView.getHeight();
+                // if there is no need to scroll, scrollAmount will be <=0
+                if (scrollAmount > 0)
+                    logView.scrollTo(0, scrollAmount);
+                else
+                    logView.scrollTo(0, 0);
             }
         });
     }
@@ -233,17 +230,13 @@ public class ProcessActivity extends AppCompatActivity {
                 return;
             }
             if (file.isFile()) {
-                if (file.delete()) {
-                    System.out.println(file.getAbsolutePath() + " was deleted successfully.");
-                }
+                file.delete();
             } else if (file.isDirectory()){
                 File[] files = file.listFiles();
                 for (File oneFile : files) {
                     deleteSD(oneFile.getAbsolutePath());
                 }
-                if (file.delete()) {
-                    System.out.println(file.getAbsolutePath() + " was deleted successfully.");
-                }
+                file.delete();
             }
         } else if (filePath.startsWith(externalPath)) {
             DocumentFile file = DocumentFile.fromTreeUri(getApplicationContext(), treeUri);
@@ -491,32 +484,6 @@ public class ProcessActivity extends AppCompatActivity {
         }
     }
 
-    /*// 元データをバックアップする
-    public void backupData(String backupFilePath, String modID) {
-        String internalPath = Environment.getExternalStorageDirectory().toString();
-        String externalPath = "External Path";
-
-        if (treeUri != null) {
-            externalPath = FileUtil.getFullPathFromTreeUri(treeUri, this);
-            if (externalPath == null) {
-                System.out.println("externalPath is null");
-                return;
-            }
-        }
-        String backupFileRelativePath = "";
-        if (backupFilePath.startsWith(internalPath)) {
-            backupFileRelativePath = backupFilePath.substring(internalPath.length() + "/Android/data/net.wargaming.wot.blitz/files/".length(), backupFilePath.length());
-        } else if (backupFilePath.startsWith(externalPath)) {
-            backupFileRelativePath = backupFilePath.substring(externalPath.length() + "/Android/data/net.wargaming.wot.blitz/files/".length(), backupFilePath.length());
-        }
-        System.out.println("backupFileRelativePath: " + backupFileRelativePath);
-        try {
-            copySD(backupFilePath, getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/" + modID + "/" + backupFileRelativePath, false, modID);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
-
     // 拡張子を取り除く
     public static String getPrefix(String fileName) {
         if (fileName == null)
@@ -554,26 +521,6 @@ public class ProcessActivity extends AppCompatActivity {
         });
     }
 
-    /*// Modを削除
-    public void removeData(String modID) {
-        handler.post(new Runnable() {
-            public void run() {
-                progressBar.setIndeterminate(true);
-            }
-        });
-        try {
-            copySD(getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/" + modID + "/Data", blitzPath, false, modID);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        deleteSD(getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/" + modID + "/Data");
-        handler.post(new Runnable() {
-            public void run() {
-                progressBar.setIndeterminate(false);
-            }
-        });
-    }*/
-
     public String getID(String string) {
         String[] array = string.split(":", -1);
         if (array.length == 2) {
@@ -585,7 +532,7 @@ public class ProcessActivity extends AppCompatActivity {
 
     public String getFullID(boolean b, int i, int j, int k) {
         if (b) { // with repo name
-            return removeHttp(repoArray.get(currentRepo)) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+            return repoNameArray.get(currentRepo) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         } else { // without repo name
             return getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         }

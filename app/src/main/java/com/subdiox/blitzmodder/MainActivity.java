@@ -3,6 +3,9 @@ package com.subdiox.blitzmodder;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -18,6 +21,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
@@ -41,8 +45,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -66,6 +72,9 @@ public class MainActivity extends AppCompatActivity {
     public static UserSettings userSettings;
     public static SectionedRecyclerViewAdapter sectionAdapter;
     public static ArrayList<String> repoArray;
+    public static ArrayList<String> repoNameArray;
+    public static ArrayList<String> repoVersionArray;
+    public static ArrayList<String> languageArray;
     public static int currentRepo;
     public static ArrayList<String> buttonArray;
     public static ArrayList<String> installedArray;
@@ -79,8 +88,8 @@ public class MainActivity extends AppCompatActivity {
     public static AlertDialog sdcardAlertDialog;
     public static String blitzMessage;
     public static boolean internal;
+    public static boolean fileFound;
     public static Handler handler;
-    public static boolean connectionError;
     public static int REQUEST_CODE;
     public static Uri treeUri;
     public static String treeUriString;
@@ -90,21 +99,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        handler = new Handler();
-        setTitle(getResources().getString(R.string.main_menu_title));
-
-        // get locale
-        locale = Locale.getDefault().getLanguage();
-        if (!(locale.equals("en")) && !(locale.equals("ja")) && !(locale.equals("ru"))) {
-            locale = "en";
-        }
-
-        // get application variables
-        app = (BMApplication)this.getApplication();
-        app.init();
 
         userSettings = UserSettings.getInstance(getApplicationContext());
         if (!userSettings.repoArray.get(0).equals("http://subdiox.com/repo")) {
@@ -115,9 +109,45 @@ public class MainActivity extends AppCompatActivity {
 
         getUserSettings();
 
+        languageArray = new ArrayList<>();
+        languageArray.addAll(Arrays.asList("en", "ja", "ru", "zh"));
+
+        System.out.println("locale: " + Locale.getDefault().getLanguage());
+        if (locale == null || locale.isEmpty()) {
+            locale = Locale.getDefault().getLanguage();
+            System.out.println("locale: " + locale);
+            if (!languageArray.contains(locale)) {
+                locale = "en";
+            }
+        }
+
+        setLocale(locale);
+
+        if (repoNameArray == null) {
+            repoNameArray = new ArrayList<>();
+            repoNameArray.add("BlitzModder");
+        }
+
+        setContentView(R.layout.activity_main);
+
+        // get application variables
+        app = (BMApplication)this.getApplication();
+        app.init();
+
         // initialize sectionedRecyclerViewAdapter
         sectionAdapter = new SectionedRecyclerViewAdapter();
 
+        // initialize handler
+        handler = new Handler();
+
+        if (Build.VERSION.SDK_INT >= 23) {
+            checkPermission();
+        } else {
+            initializeApp();
+        }
+    }
+
+    public void initializeApp() {
         // load mods list
         refreshModsList();
 
@@ -136,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(sectionAdapter);
 
         // initialize apply button
-        findViewById(R.id.applyButton).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.apply_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 prepareAlertDialog();
@@ -146,13 +176,56 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            checkPermission();
-        }
+        // initialize repo list button
+        findViewById(R.id.textview_mod_list).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final String[] items = repoArray.toArray(new String[0]);
+                int defaultItem = currentRepo;
+                final List<Integer> checkedItems = new ArrayList<>();
+                checkedItems.add(defaultItem);
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(getString(R.string.select_repository))
+                        .setSingleChoiceItems(items, defaultItem, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                checkedItems.clear();
+                                checkedItems.add(which);
+                            }
+                        })
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (!checkedItems.isEmpty()) {
+                                    currentRepo = checkedItems.get(0);
+                                    saveUserSettings();
+                                    finish();
+                                    startActivity(getIntent());
+                                }
+                            }
+                        })
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show();
+            }
+        });
+
+        // initialize settings button
+        findViewById(R.id.settings_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
+                startActivity(intent);
+                overridePendingTransition(R.anim.act_close_enter_anim, R.anim.act_close_exit_anim);
+            }
+        });
+
+        TextView repoNameText = (TextView) findViewById(R.id.textview_repo_name);
+
+        repoNameText.setText(repoNameArray.get(currentRepo));
 
         checkBlitzExists();
 
-        if (connectionError) {
+        if (!isNetworkAvailable(getApplicationContext())) {
             alertDialogBuilder = new AlertDialog.Builder(this);
             alertDialogBuilder.setCancelable(false);
             alertDialogBuilder.setTitle(getResources().getString(R.string.error));
@@ -172,6 +245,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    public boolean isNetworkAvailable(final Context context) {
+        final ConnectivityManager connectivityManager = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
+        return connectivityManager.getActiveNetworkInfo() != null && connectivityManager.getActiveNetworkInfo().isConnected();
     }
 
     private static final Pattern DIR_SEPARATOR = Pattern.compile("/");
@@ -248,6 +326,16 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.setCancelable(false);
                 alertDialog.show();
             }
+        } else {
+            initializeApp();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
+            initializeApp();
         }
     }
 
@@ -338,6 +426,9 @@ public class MainActivity extends AppCompatActivity {
         blitzPath = userSettings.blitzPath;
         internal = userSettings.internal;
         treeUriString = userSettings.treeUriString;
+        locale = userSettings.locale;
+        repoNameArray = userSettings.repoNameArray;
+        repoVersionArray = userSettings.repoVersionArray;
     }
 
     // UserSettingsを保存
@@ -350,6 +441,9 @@ public class MainActivity extends AppCompatActivity {
         userSettings.blitzPath = blitzPath;
         userSettings.internal = internal;
         userSettings.treeUriString = treeUriString;
+        userSettings.locale = locale;
+        userSettings.repoNameArray = repoNameArray;
+        userSettings.repoVersionArray = repoVersionArray;
         userSettings.saveInstance(getApplicationContext());
     }
 
@@ -403,12 +497,9 @@ public class MainActivity extends AppCompatActivity {
                     "OK",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
-                            // initialize intent
-                            Intent intent = new Intent();
-                            intent.setClassName("com.subdiox.blitzmodder", "com.subdiox.blitzmodder.ProcessActivity");
-
-                            // start intent
+                            Intent intent = new Intent(getApplicationContext(), ProcessActivity.class);
                             startActivity(intent);
+                            overridePendingTransition(R.anim.act_open_enter_anim, R.anim.act_open_exit_anim);
                         }
                     });
             alertDialogBuilder.setNegativeButton(
@@ -429,36 +520,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            // initialize intent
-            Intent intent = new Intent();
-            intent.setClassName("com.subdiox.blitzmodder", "com.subdiox.blitzmodder.SettingsActivity");
-
-            // start intent
-            startActivity(intent);
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void checkBlitzExists() {
+    public void checkBlitzExists() {
         System.out.println("blitzPath: " + blitzPath);
-        if (blitzPath.equals("")) {
+        if (blitzPath == null || blitzPath.equals("")) {
             alertDialogBuilder = new AlertDialog.Builder(this);
             alertDialogBuilder.setTitle(getResources().getString(R.string.blitz_check_title));
             blitzMessage = getResources().getString(R.string.blitz_initial_check);
@@ -550,13 +614,10 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("treeUriString: " + treeUriString);
         if (Build.VERSION.SDK_INT >= 21) {
             if (treeUriString != null) {
-                System.out.println("1");
                 if (treeUriString.equals("")) {
-                    System.out.println("2");
                     requestSdcardAccessPermission();
                 }
             } else {
-                System.out.println("3");
                 requestSdcardAccessPermission();
             }
 
@@ -570,7 +631,13 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getString(R.string.okay),
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
-                            getBlitzPath();
+                            if (treeUriString != null) {
+                                if (treeUriString.equals("")) {
+                                    requestSdcardAccessPermission();
+                                }
+                            } else {
+                                requestSdcardAccessPermission();
+                            }
                         }
                     });
             AlertDialog internalAlert = internalAlertDialog.create();
@@ -602,62 +669,38 @@ public class MainActivity extends AppCompatActivity {
         return text.toString();
     }
 
-    private String removeHttp(String string) {
-        if (string.startsWith("http://")) {
-            return string.substring("http://".length(), string.length()).replaceAll("/",":");
-        } else if (string.startsWith("https://")) {
-            return string.substring("https://".length(), string.length()).replaceAll("/",":");
-        } else {
-            return string.replaceAll("/",":");
-        }
-    }
-
     // refresh mods list
     private void refreshModsList() {
-        String plistPath = getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/plist/" + locale + ".plist";
-        File file = new File(plistPath);
-        if (!file.getParentFile().exists()) {
-            boolean result = file.getParentFile().mkdirs();
-            if (result) {
-                System.out.println("Succeeded in creating directory!");
-            } else {
-                Toast.makeText(this, "Failed to create directory.", Toast.LENGTH_LONG).show();
+        String dirPath = getCacheDir() + "/" + repoNameArray.get(currentRepo) + "/plist";
+        File file = new File(dirPath);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        ArrayList<String> tryArray = languageArray;
+        int index = tryArray.indexOf(locale);
+        if (index != -1) {
+            tryArray.set(index, tryArray.get(0));
+            tryArray.set(0, locale);
+        }
+        System.out.println("tryArray: " + tryArray);
+        String okLocale = tryArray.get(0);
+        for (String tryLocale : tryArray) {
+            try {
+                downloadPath = getCacheDir() + "/" + repoNameArray.get(currentRepo) + "/plist/" + tryLocale + ".plist";
+                new DownloadTask(this).execute(repoArray.get(currentRepo) + "/plist/" + tryLocale + ".plist").get();
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
             }
-        }
-        try {
-            downloadPath = getExternalCacheDir() + "/" + removeHttp(repoArray.get(currentRepo)) + "/plist/" + locale + ".plist";
-            new DownloadTask(this).execute(repoArray.get(currentRepo) + "/plist/" + locale + ".plist").get();
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (connectionError) {
-            alertDialogBuilder = new AlertDialog.Builder(this);
-            alertDialogBuilder.setCancelable(false);
-            alertDialogBuilder.setTitle(getResources().getString(R.string.error));
-            alertDialogBuilder.setMessage(getResources().getString(R.string.connection_error_message));
-            alertDialogBuilder.setPositiveButton(
-                    getResources().getString(R.string.recheck),
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            refreshModsList();
-                        }
-                    });
-            handler.post(new Runnable() {
-                public void run() {
-                    alertDialog = alertDialogBuilder.create();
-                    alertDialog.setCancelable(false);
-                    alertDialog.show();
-                }
-            });
-            modCategoryArray = new ArrayList<>();
-            modNameArray = new ArrayList<>();
-            modDetailArray = new ArrayList<>();
-            return;
+            if (fileFound) {
+                okLocale = tryLocale;
+                break;
+            }
         }
         PListXMLParser parser = new PListXMLParser();
         PListXMLHandler handler = new PListXMLHandler();
         parser.setHandler(handler);
         try {
+            String plistPath = getCacheDir() + "/" + repoNameArray.get(currentRepo) + "/plist/" + okLocale + ".plist";
             if (new File(plistPath).exists()) {
                 parser.parse(readFile(plistPath));
                 PList actualPList = ((PListXMLHandler) parser.getHandler()).getPlist();
@@ -699,6 +742,8 @@ public class MainActivity extends AppCompatActivity {
                 modNameArray = new ArrayList<>();
                 modDetailArray = new ArrayList<>();
             }
+
+            sectionAdapter.notifyDataSetChanged();
         } catch (IllegalStateException e) {
             e.printStackTrace();
         }
@@ -722,19 +767,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public String getBlitzVersion() {
-        String resourcesPath = blitzPath + "/version/resources.txt";
         String versionName;
-        if (new File(resourcesPath).exists()) {
-            String resources = readFile(resourcesPath);
-            versionName = resources.split("\\n")[1];
-        } else {
+        try {
+            versionName = getPackageManager().getPackageInfo("net.wargaming.wot.blitz", 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
             versionName = "0.0.0";
         }
-        // WGの3.6.0ミスリリースへの対策
-        if (versionName.equals("3.6.0")) {
-            versionName = "3.5.3";
-        }
-        System.out.println("Blitz version: " + versionName);
         String[] array = versionName.split("\\.");
         return array[0] + "." + array[1] + "." + array[2];
     }
@@ -768,10 +806,22 @@ public class MainActivity extends AppCompatActivity {
 
     public String getFullID(boolean b, int i, int j, int k) {
         if (b) { // with repo name
-            return removeHttp(repoArray.get(currentRepo)) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
+            return repoNameArray.get(currentRepo) + "." + getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         } else { // without repo name
             return getID(modCategoryArray.get(i)) + "." + getID(modNameArray.get(i).get(j)) + "." + getID(modDetailArray.get(i).get(j).get(k));
         }
+    }
+
+    public void setLocale(String lang) {
+        Locale myLocale = new Locale(lang);
+        Resources res = getResources();
+        DisplayMetrics dm = res.getDisplayMetrics();
+        Configuration conf = res.getConfiguration();
+        conf.locale = myLocale;
+        res.updateConfiguration(conf, dm);
+        //Intent refresh = new Intent(getApplicationContext(), MainActivity.class);
+        //startActivity(refresh);
+        //finish();
     }
 
     class ModSection extends StatelessSection {
@@ -814,16 +864,11 @@ public class MainActivity extends AppCompatActivity {
             itemHolder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    // initialize intent
-                    Intent intent = new Intent();
-                    intent.setClassName("com.subdiox.blitzmodder", "com.subdiox.blitzmodder.SubActivity");
-
-                    // set intent extra data
+                    Intent intent = new Intent(getApplicationContext(), SubActivity.class);
                     intent.putExtra("section", section);
                     intent.putExtra("position", position);
-
-                    // start intent
                     startActivity(intent);
+                    overridePendingTransition(R.anim.act_open_enter_anim, R.anim.act_open_exit_anim);
                 }
             });
         }
@@ -847,7 +892,7 @@ public class MainActivity extends AppCompatActivity {
                 URL url = new URL(sUrl[0]);
                 connection = (HttpURLConnection) url.openConnection();
                 connection.connect();
-
+                fileFound = true;
                 int statusCode = connection.getResponseCode();
                 // check 20x
                 if (statusCode != HttpURLConnection.HTTP_OK
@@ -859,6 +904,9 @@ public class MainActivity extends AppCompatActivity {
 
                         String newUrlString = connection.getHeaderField("Location");
                         connection = (HttpURLConnection) new URL(newUrlString).openConnection();
+                    } else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                        System.out.println("File Not Found");
+                        fileFound = false;
                     } else {
                         // 20x or 30x系でないので例外を送出
                         throw new IOException("Response code is " + Integer.toString(statusCode) + " " + connection.getResponseMessage());

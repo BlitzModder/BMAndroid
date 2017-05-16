@@ -33,7 +33,18 @@
         android:layout_alignParentStart="true"
         android:layout_marginBottom="14dp"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:color="@android:color/holo_blue_light" />
+
+    <TextView
+        android:text="TextView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/logView"
+        android:textColor="@color/white"
+        android:maxLines="25"
+        android:scrollbars="vertical"
+        android:layout_marginBottom="50dp" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -44,13 +55,6 @@
         android:fillViewport="true"
         android:layout_weight="1.0"
         android:id="@+id/scrollView">
-
-        <TextView
-            android:text="TextView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/logView"
-            android:textColor="@color/white" />
 
         <!--<LinearLayout
             android:layout_width="match_parent"

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BlitzModder</string>
-    <string name="title_activity_sub">SubActivity</string>
     <string name="action_settings">Настройки</string>
     <string name="action_apply">Применить</string>
     <string name="not_installed">Не установлено</string>
@@ -30,21 +29,11 @@
     <string name="blitz_not_installed">World of Tanks Blitz не установлен.\nПожалуйста скачайте игру в Google Play.</string>
     <string name="recheck">Перепроверьте</string>
     <string name="permission_required">Вы должны дать права BlitzModder на запись в памяти, для того, чтобы он правильно работал.</string>
-    <string name="pref_header_general">Общий</string>
-    <string name="pref_title_disk">Место установки Blitz</string>
-    <string name="pref_header_contact">Контакты</string>
-    <string name="pref_title_website">Сайт BlitzModder</string>
-    <string name="pref_title_send_email">Отправить email разработчику</string>
-    <string name="pref_title_twitter">Связаться с разработчиком в Twitter</string>
-    <string name="pref_description_send_email">Если у Вас есть вопросы или пожелания, не стесняйтесь, пишите мне на email.</string>
-    <string name="pref_description_twitter">Вы всегда можете найти меня и отправить сообщение в Twitter.</string>
-    <string name="pref_description_website">Если у Вас возникли проблемы во время использования BlitzModder, перейдите в раздел "Usage" на сайте BlitzModder.</string>
-    <string name="title_activity_confirm">Подтверждение</string>
     <string name="sdcard_permission_message">Please select SD card to allow BlitzModder to access it.\n(Please don\'t select other than SD card root directory! Or BlitzModder won\'t work properly.)</string>
     <string name="sdcard_permission_title">Grant access to SD card</string>
     <string name="error">Ошибка</string>
     <string name="notice">Notice</string>
-    <string name="sdcard_not_supported_kitkat">SD card is not supported on KitKat, because of OS restriction. Please reinstall Blitz on internal storage.</string>
+    <string name="sdcard_not_supported_kitkat">Writing on SD card is restricted on Android OS 4.4 KitKat. If you have difficulty using SD card, please reinstall World of Tanks Blitz to internal storage.</string>
     <string name="sdcard_notice">Writing to SD card takes a very long time due to OS restriction.\n We recommend that you reinstall Blitz on internal storage.\nYou can change this settings afterwards.</string>
     <string name="some_error_occurred">Some error occurred. Please contact developer.</string>
     <string name="cancel">Cancel</string>
@@ -55,4 +44,35 @@
     <string name="delete_blitz_summary">You can delete data of World of Tanks Blitz. After that, you need to open Blitz to initialize it.</string>
     <string name="delete_blitz">Delete Blitz Data</string>
     <string name="delete_finished">Deleting Blitz Data is finished. Please open World of Tanks Blitz to initialize it.</string>
+    <string name="add_repository">Add Repository</string>
+    <string name="bug_report">Bug Report / Feature Request</string>
+    <string name="bug_report_detail">Any feedback or question is welcome.</string>
+    <string name="confirm_reset_storage">Are you sure to change storage setting?</string>
+    <string name="contact">Contact</string>
+    <string name="delete_repository">Are you sure to delete this repository?</string>
+    <string name="donate">Donate to Developer</string>
+    <string name="donate_detail">If you like my app, please donate to me.</string>
+    <string name="english">English</string>
+    <string name="invalid_repository">This repository is invalid! Please contact the owner of this repository.</string>
+    <string name="japanese">Japanese</string>
+    <string name="mods_list">Список модов ▼</string>
+    <string name="repository">Repository</string>
+    <string name="repository_settings">Repository Settings</string>
+    <string name="repository_settings_detail">You can manage repositories to download mods list.</string>
+    <string name="reset_all_settings">Reset All Settings</string>
+    <string name="reset_all_settings_detail">Tap here when something is wrong with BlitzModder</string>
+    <string name="reset_all_settings_message">Are you sure to reset all settings of BlitzModder? This operation cannot be undone.</string>
+    <string name="reset_installation">Reset Installation</string>
+    <string name="reset_installation_detail">Tap here after you reinstall Blitz</string>
+    <string name="reset_installation_message">Are you sure to reset installation data? This operation cannot be undone.</string>
+    <string name="reset_internal_message">Storage setting has been cleared. You need to specify where Blitz is installed.</string>
+    <string name="russian">Russian</string>
+    <string name="select_repository">Select Repository</string>
+    <string name="storage">Storage</string>
+    <string name="storage_title">Blitz Installed Storage</string>
+    <string name="trouble_shooting">Trouble Shooting</string>
+    <string name="website">Website</string>
+    <string name="website_detail">Tap here to refer to the usage of BlitzModder</string>
+    <string name="doInstall">Install</string>
+    <string name="language">Языковые настройки</string>
 </resources>

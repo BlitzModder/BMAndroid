@@ -18,7 +18,7 @@
         tools:text="Title test text"
         android:textColor="@android:color/holo_blue_dark"
         android:textStyle="bold"
-        android:id="@+id/modCategory"
+        android:id="@+id/settingsCategory"
         android:textSize="14sp"
         android:paddingTop="30dp"
         android:layout_above="@+id/view"
